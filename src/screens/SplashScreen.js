@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Image, Animated } from "react-native";
+import { View, Text, StyleSheet, Image, Animated, Alert } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SplashScreen = ({ navigation }) => {
 
-  const slideAnim = useRef(new Animated.Value(80)).current; 
+  const slideAnim = useRef(new Animated.Value(80)).current;
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -12,36 +13,49 @@ const SplashScreen = ({ navigation }) => {
       useNativeDriver: true,
     }).start();
 
-    const timer = setTimeout(() => {
-      navigation.replace("CitySelection");
-    }, 3000);
+    let navigateTimer;
 
-    return () => clearTimeout(timer);
+    const onAgree = async () => {
+      try {
+        const savedCity = await AsyncStorage.getItem('selectedCityData');
+        if (savedCity) {
+          navigation.replace('Home', { city: savedCity?.city });
+        } else {
+          navigateTimer = setTimeout(() => {
+            navigation.replace('CitySelection');
+          }, 2000);
+        }
+      } catch (e) {
+        navigateTimer = setTimeout(() => {
+          navigation.replace('CitySelection');
+        }, 2000);
+      }
+    };
+
+    const disclaimerMessage =
+      'The contents of this Application are very sacred as it contains Photos of Arihant Bhagwan and Religious Literature. So we request you to use respectfully and avoid Ashatana.\n\nAll calculations are generated based on Longitude and Latitude. There may be minor difference in Pachhakana timings.';
+
+    Alert.alert(
+      'Disclaimer',
+      disclaimerMessage,
+      [
+        { text: 'Agree', onPress: onAgree },
+      ],
+      { cancelable: false }
+    );
+
+    return () => {
+      if (navigateTimer) clearTimeout(navigateTimer);
+    };
   }, []);
 
   return (
     <View style={styles.container}>
-
-      <Text style={styles.mantra}>
-        || Shree Shankheshwar Parsvanathay Namah ||
-      </Text>
-
-      <Animated.View 
-        style={{
-          transform: [{ translateY: slideAnim }],
-        }}
-      >
-        <Image
-          source={require("../assets/iphone15.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </Animated.View>
-
-      <Text style={styles.bottomText}>
-        Jain Shwetambar Sangh{"\n"}Sydney
-      </Text>
-
+      <Image
+        source={require("../assets/landing.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
     </View>
   );
 };
@@ -54,28 +68,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  mantra: {
-    position: "absolute",
-    top: "20%",
-    color: "white",
-    fontSize: 18,
-    fontFamily: "sans-serif-light",
-    textAlign: "center",
-  },
-
   logo: {
-    width: 250,
-    height: 150,
-    marginBottom: 20,
-  },
-
-  bottomText: {
-    position: "absolute",
-    bottom: "20%",
-    color: "white",
-    fontSize: 22,
-    textAlign: "center",
-    fontFamily: "sans-serif",
+    width: "100%",
+    height: "100%",
   },
 });
 
