@@ -15,17 +15,18 @@ import {
     FlatList,
     Linking,
     Share,
+    ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Svg, { Circle, Path, G, Text as SvgText } from 'react-native-svg';
 import i18n, { changeLanguage, getCurrentLanguage } from '../../i18n/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { convertNumber, formatJainDate, formatTime } from '../../utils/numberConverter';
+import { convertDigitsOnly, convertNumber, formatJainDate, formatTime } from '../../utils/numberConverter';
 import { getCurrentTimings } from '../../utils/timingCalculator';
 import { getCalendarData, initDatabase } from '../../database/database';
 import moment from 'moment-timezone';
 import importAllData from '../../database/importData';
-import { getAllLocations } from '../../component/global';
+import { getAllLocations, getFrontDashboardData, getDashboardData } from '../../component/global';
 
 const { width } = Dimensions.get('window');
 const CHART_SIZE = width * 0.95; // Increased size to take more screen width
@@ -42,69 +43,129 @@ const getDurationInMinutes = (timeRange) => {
 
     return toMinutes(end) - toMinutes(start);
 };
+const getTimingColor = (timingName) => {
+    const colorMap = {
+        // English
+        'sunrise': '#FF8C00',     // Dark Orange
+        'navkarshi': '#FFD700',   // Gold
+        'porisi': '#32CD32',      // Lime Green
+        'saddha_porisi': '#1E90FF', // Dodger Blue
+        'purimaddha': '#9370DB',  // Medium Purple
+        'avaddha': '#FF6347',     // Tomato
+        'sunset': '#FF4500',      // Orange Red
 
-const Chart = ({ data: sunTimes = {}, choghadiya = {} }) => {
-    const choghadiyaData =
-        choghadiya?.day?.map(item => ({
-            label: item.name
-                .split('.')
-                .pop()
-                .replace(/^\w/, c => c.toUpperCase()),
-            value: getDurationInMinutes(item.time), // 🔥 dynamic
-            color: item.color,
-            time: item.time
-        })) || [];
+        // Hindi
+        'सूर्योदय': '#FF8C00',
+        'नवकारशी': '#FFD700',
+        'पोरिसी': '#32CD32',
+        'साड्ढ-पोरिसिं': '#1E90FF',
+        'पुरिमड्ढ': '#9370DB',
+        'अवड्ढ': '#FF6347',
+        'सूर्यास्त': '#FF4500',
 
-    // Add sunrise at start and sunset at end
-    const data = [
-        {
-            label: 'Sunrise',
-            value: SUN_EVENT_MINUTES, // Smaller segment for sun events
-            color: 'rgba(0, 0, 0, 0.3)',
-            isSunEvent: true,
-            time: sunTimes.sunrise || '--:-- --'
-        },
-        ...choghadiyaData,
-        {
-            label: 'Sunset',
-            value: SUN_EVENT_MINUTES,// Smaller segment for sun events
-            color: 'rgba(0, 0, 0, 0.3)',
-            isSunEvent: true,
-            time: sunTimes.sunset || '--:-- --'
-        }
-    ];
-    // console.log('Data:', data);
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    const chartHeight = CHART_RADIUS * 1.2; // Adjusted for half circle
+        // Gujarati
+        'સૂર્યોદય': '#FF8C00',
+        'નવકારશી': '#FFD700',
+        'પોરિસિં': '#32CD32',
+        'સાડ્ઢપોરિસિં': '#1E90FF',
+        'પુરિમડ્ઢ': '#9370DB',
+        'અવધ': '#FF6347',
+        'સૂર્યાસ્ત': '#FF4500'
+    };
+
+    return colorMap[timingName] || '#A9A9A9'; // Default to gray if not found
+};
+
+const Chart = ({ data: sunTimes = {}, timingData = [] }) => {
+
+    /* ---------- helpers ---------- */
+
+    const toMinutes = (time) => {
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    const hexToRgba = (hex, alpha) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    /* ---------- sunset time ---------- */
+
+    const sunsetTime =
+        timingData.find(item => item.name === 'सूर्यास्त' || item.name === 'સૂર્યાસ્ત' || item.name === 'sunset')?.time;
+
+    /* ---------- prepare data ---------- */
+
+    const sortedTimings = [...timingData].sort(
+        (a, b) => toMinutes(a.time) - toMinutes(b.time)
+    );
+
+    const choghadiyaData = sortedTimings
+        .map((item, index, arr) => {
+            const start = toMinutes(item.time);
+
+            let end;
+            if (index < arr.length - 1) {
+                end = toMinutes(arr[index + 1].time);
+            } else {
+                end = sunsetTime ? toMinutes(sunsetTime) : start;
+            }
+
+            const value = Math.max(end - start, 0);
+            const isEdge = index === 0 || index === arr.length - 1;
+
+            return {
+                label: item.name,
+                value,
+                color: isEdge
+                    ? hexToRgba(item.color, 0.3)
+                    : hexToRgba(item.color, 0.5),
+                time: item.time,
+            };
+        })
+        .filter(item => item.value > 0); // remove zero durations
+
+    /* ---------- half circle math ---------- */
+
+    const total = choghadiyaData.reduce((s, i) => s + i.value, 0);
+
+    const chartHeight = CHART_RADIUS * 1.2;
     const centerX = CHART_RADIUS;
-    const centerY = CHART_RADIUS * 0.9; // Position center Y lower for half circle
+    const centerY = CHART_RADIUS * 0.9;
+
     const outerRadius = CHART_RADIUS * 0.8;
     const innerRadius = CHART_RADIUS * 0.001;
+
     let startAngle = 180;
 
-    // Function to create a half-circle segment
+    /* ---------- svg segment ---------- */
+
     const createHalfCircleSegment = (startAngle, endAngle, color, index) => {
-        // Convert angles to radians
         const startRad = (startAngle * Math.PI) / 180;
         const endRad = (endAngle * Math.PI) / 180;
 
-        // Calculate inner and outer points
         const x1 = centerX + innerRadius * Math.cos(startRad);
         const y1 = centerY - innerRadius * Math.sin(startRad);
+
         const x2 = centerX + innerRadius * Math.cos(endRad);
         const y2 = centerY - innerRadius * Math.sin(endRad);
 
         const x3 = centerX + outerRadius * Math.cos(endRad);
         const y3 = centerY - outerRadius * Math.sin(endRad);
+
         const x4 = centerX + outerRadius * Math.cos(startRad);
         const y4 = centerY - outerRadius * Math.sin(startRad);
 
-        // Create the path for the segment
-        const path = `M ${x1} ${y1} 
-                     A ${innerRadius} ${innerRadius} 0 0 1 ${x2} ${y2} 
-                     L ${x3} ${y3} 
-                     A ${outerRadius} ${outerRadius} 0 0 0 ${x4} ${y4} 
-                     Z`;
+        const path = `
+      M ${x1} ${y1}
+      A ${innerRadius} ${innerRadius} 0 0 1 ${x2} ${y2}
+      L ${x3} ${y3}
+      A ${outerRadius} ${outerRadius} 0 0 0 ${x4} ${y4}
+      Z
+    `;
 
         return (
             <Path
@@ -117,10 +178,11 @@ const Chart = ({ data: sunTimes = {}, choghadiya = {} }) => {
         );
     };
 
-    // Generate segments
-    const segments = data.map((item, index) => {
-        const segmentAngle = (item.value / total) * 180;
-        const endAngle = startAngle - segmentAngle;
+    /* ---------- generate segments ---------- */
+
+    const segments = choghadiyaData.map((item, index) => {
+        const angle = (item.value / total) * 180;
+        const endAngle = startAngle - angle;
 
         const segment = createHalfCircleSegment(
             startAngle,
@@ -129,60 +191,44 @@ const Chart = ({ data: sunTimes = {}, choghadiya = {} }) => {
             index
         );
 
-        // Calculate label position
-        const middleAngle = (startAngle + endAngle) / 2;
-        const labelRadius = (innerRadius + outerRadius) / 2;
-        const labelX = centerX + labelRadius * Math.cos((middleAngle * Math.PI) / 180);
-        const labelY = centerY - labelRadius * Math.sin((middleAngle * Math.PI) / 180);
-
-        // Update start angle for next segment
         startAngle = endAngle;
-
-        return (
-            <React.Fragment key={`fragment-${index}`}>
-                {segment}
-                {/* <SvgText
-                    x={labelX}
-                    y={labelY}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fill="black"
-                    transform={`rotate(${-middleAngle + 90}, ${labelX}, ${labelY})`}
-                >
-                    {item.label}
-                </SvgText> */}
-            </React.Fragment>
-        );
+        return segment;
     });
+
+    /* ---------- render ---------- */
 
     return (
         <View style={[styles.chartContainer, { height: chartHeight }]}>
             <Svg width={CHART_SIZE} height={chartHeight}>
-                {/* Background half-circle */}
+
+                {/* background half circle */}
                 <Path
-                    d={`M ${centerX - outerRadius} ${centerY} 
-                       A ${outerRadius} ${outerRadius} 0 0 1 ${centerX + outerRadius} ${centerY} 
-                       L ${centerX + innerRadius} ${centerY} 
-                       A ${innerRadius} ${innerRadius} 0 0 0 ${centerX - innerRadius} ${centerY} Z`}
-                    fill="rgba(255, 255, 255, 0.1)"
+                    d={`M ${centerX - outerRadius} ${centerY}
+              A ${outerRadius} ${outerRadius} 0 0 1 ${centerX + outerRadius} ${centerY}
+              L ${centerX + innerRadius} ${centerY}
+              A ${innerRadius} ${innerRadius} 0 0 0 ${centerX - innerRadius} ${centerY}
+              Z`}
+                    fill="rgba(255,255,255,0.1)"
                 />
 
-                {/* Segments */}
                 {segments}
-
-                {/* Inner circle removed as requested */}
             </Svg>
 
-            {/* Sun and Moon times */}
+            {/* sunrise / sunset info */}
             <View style={styles.sunMoonContainer}>
                 <View style={styles.timeContainer}>
                     <Icon name="sunny" size={20} color="#FFD700" />
-                    <Text style={styles.timeText}>{formatTime(sunTimes?.sunrise, i18n.locale)}</Text>
+                    <Text style={styles.timeText}>
+                        {formatTime(sunTimes?.sunrise, i18n.locale)}
+                    </Text>
                     <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
                 </View>
+
                 <View style={styles.timeContainer}>
                     <Icon name="moon" size={20} color="#87CEEB" />
-                    <Text style={styles.timeText}>{formatTime(sunTimes?.sunset, i18n.locale)}</Text>
+                    <Text style={styles.timeText}>
+                        {formatTime(sunTimes?.sunset, i18n.locale)}
+                    </Text>
                     <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
                 </View>
             </View>
@@ -191,8 +237,10 @@ const Chart = ({ data: sunTimes = {}, choghadiya = {} }) => {
 };
 
 
+
 const Home = ({ route, navigation }) => {
     const [loading, setLoading] = useState(true);
+    const [language, setLanguage] = useState(i18n.locale);  // Default to Gujarati
     const [activeTab, setActiveTab] = useState('pachakkhan');
     const [cities, setCities] = useState([]);
     const [choghadiyaActiveTab, setChoghadiyaActiveTab] = useState('sun');
@@ -202,6 +250,8 @@ const Home = ({ route, navigation }) => {
     const [selectedCity, setSelectedCity] = useState(null);
     const [currentLanguage, setCurrentLanguage] = useState('gu'); // Default to Gujarati
     const [timingData, setTimingData] = useState([]);
+    const [globalData, setGlobalData] = useState({});
+    const [dashboardData, setDashboardData] = useState({});
     const [choghadiyaData, setChoghadiyaData] = useState({ day: [], night: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [jainDateInfo, setJainDateInfo] = useState('');
@@ -222,6 +272,165 @@ const Home = ({ route, navigation }) => {
         isAmavasya: false,
         isPurnima: false
     });
+    useEffect(() => {
+        const loadData = async () => {
+            let lang = i18n.locale;
+            setLanguage(lang);
+            await getGlobalData(selectedDate);
+        };
+        loadData();
+    }, [selectedDate]);
+
+    const getGlobalData = async (date) => {
+        try {
+            setLoading(true);
+
+            // Get selected city data from AsyncStorage
+            const selectedCityStr = await AsyncStorage.getItem('selectedCity');
+            const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
+                lat: '22.2726554',
+                long: '73.1969701',
+                country_code: 'IN'
+            };
+            console.log("selectedCity", selectedCity);
+
+            // Get current year and month
+            const day = date.getDate();
+            const year = date.getFullYear().toString();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+
+            // Fetch calendar data from API
+            const response = await getFrontDashboardData(
+                day,
+                year,
+                month,
+                selectedCity.lat,
+                selectedCity.long,
+                selectedCity.country_code,
+            );
+
+            if (response && response.data) {
+                await setGlobalData(response.data);
+                getDashboardDataWithTiming(selectedDate);
+            }
+        } catch (error) {
+            console.error('Error loading month data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    const convertChoghadiya = (data = []) => {
+        const colors = [
+            'rgba(100, 200, 255, 0.6)',
+            'rgba(100, 255, 100, 0.6)',
+            'rgba(255, 100, 0, 0.6)',
+            'rgba(255, 230, 0, 0.6)',
+            'rgba(255, 190, 0, 0.6)',
+            'rgba(200, 150, 255, 0.6)'
+        ];
+        return data.reduce(
+            (acc, item) => {
+                const key = item.type.toLowerCase(); // day / night
+                const nameKey = item.name_english.toLowerCase();
+
+                acc[key].push({
+                    id: item.seq,
+                    name: language === 'gu' ? item.name_gujarati : language === 'hi' ? item.name_hindi : item.name_english,
+                    time: item.choghadiya_time,
+                    color: colors[nameKey] || 'rgba(0,0,0,0.3)',
+                });
+
+                return acc;
+            },
+            { day: [], night: [] }
+        );
+    };
+    const processTimingData = (timingData, lang) => {
+        const langKey = lang === 'en' ? 'english' : lang === 'gu' ? 'gujarati' : 'hindi';
+        return Object.entries(timingData[langKey] || timingData.english)
+            .map(([name, time], index) => ({
+                id: `timing-${index}`,
+                name,
+                time,
+                color: getTimingColor(name)
+            }));
+    };
+    const getDashboardDataWithTiming = async (date) => {
+        try {
+            setLoading(true);
+
+            // Get selected city data from AsyncStorage
+            const selectedCityStr = await AsyncStorage.getItem('selectedCity');
+            const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
+                lat: '22.2726554',
+                long: '73.1969701',
+                country_code: 'IN'
+            };
+
+            // Get current year and month
+            const day = date.getDate();
+            const year = date.getFullYear().toString();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+
+            // Fetch calendar data from API
+            const response = await getDashboardData(
+                globalData.day_name || 'Monday', // Add fallback for day_name
+                day,
+                year,
+                month,
+                selectedCity.lat.toString(),
+                selectedCity.long.toString(),
+            );
+
+            if (response?.data) {
+                // Safely handle choghadiya data
+                const choghadiya = response.data ? convertChoghadiya(response.data) : { day: [], night: [] };
+                setChoghadiyaData(choghadiya);
+
+                // Safely handle timing data
+                if (response?.timedata?.data) {
+                    const timingArray = processTimingData(response.timedata.data, language);
+                    setTimingData(timingArray);
+
+                    // Safely set sun times with fallbacks
+                    const englishTimings = response.timedata.data.english || {};
+                    setSunTimes({
+                        sunrise: englishTimings.sunrise || '--:--',
+                        sunset: englishTimings.sunset || '--:--'
+                    });
+                } else {
+                    // Set default timing data if not available
+                    setTimingData([]);
+                    setSunTimes({
+                        sunrise: '--:--',
+                        sunset: '--:--'
+                    });
+                }
+
+                setDashboardData(response.data || {});
+            } else {
+                // Handle case when response doesn't have expected data
+                setChoghadiyaData({ day: [], night: [] });
+                setTimingData([]);
+                setSunTimes({
+                    sunrise: '--:--',
+                    sunset: '--:--'
+                });
+                setDashboardData({});
+            }
+        } catch (error) {
+            console.error('Error in getDashboardDataWithTiming:', error);
+            // Set default values on error
+            setChoghadiyaData({ day: [], night: [] });
+            setTimingData([]);
+            setSunTimes({
+                sunrise: '--:--',
+                sunset: '--:--'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         const loadSelectedCity = async () => {
@@ -271,73 +480,8 @@ const Home = ({ route, navigation }) => {
             const newDate = new Date(route.params.selectedDate);
             setSelectedDate(newDate);
         }
-    }, [route.params?.selectedDate]);
+    }, []);
 
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                await initDatabase();
-                await importAllData();
-                await loadJainDate(selectedDate);
-            } catch (error) {
-                console.error('Error loading data:', error);
-            }
-        };
-        loadData();
-    }, [selectedDate]);
-
-    const loadJainDate = async () => {
-        try {
-            const dateStr = moment(selectedDate).format('YYYY-MM-DD');
-            console.log("dateStr", dateStr);
-            const calendarData = await getCalendarData(dateStr, dateStr);
-            console.log("calendarData", calendarData);
-            if (calendarData && calendarData.length > 0) {
-                setJainDateInfo(calendarData[0].jain_date_full || '');
-            } else {
-                setJainDateInfo('');
-            }
-        } catch (error) {
-            console.error('Error loading Jain date:', error);
-            setJainDateInfo('');
-        }
-    };
-
-    // Load timings when city or selected date changes
-    useEffect(() => {
-        const loadTimings = async () => {
-            if (!selectedDate) return;
-
-            try {
-                setIsLoading(true);
-                const timings = await getCurrentTimings(selectedDate);
-                // console.log('Received timings for date:', selectedDate, timings);
-                setTimingData(timings.timings);
-                setChoghadiyaData(timings.choghadiya);
-                setSunTimes({
-                    sunrise: timings.sunrise,
-                    sunset: timings.sunset
-                });
-            } catch (error) {
-                console.error('Error loading timings:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadTimings();
-
-        // Only set up interval if we're using the current date
-        let interval;
-        const isCurrentDate = selectedDate && moment(selectedDate).isSame(moment(), 'day');
-        if (isCurrentDate) {
-            interval = setInterval(loadTimings, 60 * 60 * 1000);
-        }
-
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [selectedCity, selectedDate]);
     useEffect(() => {
         const loadCities = async () => {
             try {
@@ -414,344 +558,333 @@ const Home = ({ route, navigation }) => {
             style={styles.backgroundImage}
             resizeMode="cover"
         >
-            <View style={styles.overlay}>
-                <View style={styles.container}>
-                    <StatusBar barStyle="light-content" backgroundColor="#9E1B17" />
+            {loading ?
+                <ActivityIndicator size="large" color='rgba(rgba(128, 0, 0, 0.6))' />
+                :
+                <View style={styles.overlay}>
+                    <View style={styles.container}>
+                        <StatusBar barStyle="light-content" backgroundColor="#9E1B17" />
 
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <View style={styles.headerTop}>
-                            <TouchableOpacity onPress={onShare} activeOpacity={0.7}>
-                                <Icon name="share-social-outline" size={24} color="white" />
-                            </TouchableOpacity>
-                            <Image
-                                source={require('../../assets/logo.png')}
-                                style={styles.logo}
-                                resizeMode="contain"
-                            />
-                            <View style={styles.rightIcons}>
-                                <TouchableOpacity onPress={() => setShowCityModal(true)} activeOpacity={0.7}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Icon name="location-outline" size={24} color="white" />
-                                        {((selectedCity && selectedCity.name) || (route.params && route.params.name)) ? (
-                                            <Text style={styles.cityAbbr}>{((selectedCity && selectedCity.name) || (route.params && route.params.name)).slice(0, 3)}</Text>
-                                        ) : null}
-                                    </View>
+                        {/* Header */}
+                        <View style={styles.header}>
+                            <View style={styles.headerTop}>
+                                <TouchableOpacity onPress={onShare} activeOpacity={0.7}>
+                                    <Icon name="share-social-outline" size={24} color="white" />
                                 </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => setShowLanguageModal(true)}
-                                    activeOpacity={0.7}
-                                    style={styles.iconSpacing}
-                                >
-                                    <Icon name="language" size={24} color="white" />
-                                </TouchableOpacity>
+                                <Image
+                                    source={require('../../assets/logo.png')}
+                                    style={styles.logo}
+                                    resizeMode="contain"
+                                />
+                                <View style={styles.rightIcons}>
+                                    <TouchableOpacity onPress={() => setShowCityModal(true)} activeOpacity={0.7}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Icon name="location-outline" size={24} color="white" />
+                                            {((selectedCity && selectedCity.name) || (route.params && route.params.name)) ? (
+                                                <Text style={styles.cityAbbr}>{((selectedCity && selectedCity.name) || (route.params && route.params.name)).slice(0, 3)}</Text>
+                                            ) : null}
+                                        </View>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => setShowLanguageModal(true)}
+                                        activeOpacity={0.7}
+                                        style={styles.iconSpacing}
+                                    >
+                                        <Icon name="language" size={24} color="white" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         </View>
-                    </View>
 
-                    <View style={styles.scrollContainer}>
-                        <ScrollView
-                            style={styles.scrollView}
-                            contentContainerStyle={[styles.content, styles.scrollContent]}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            <Chart data={sunTimes} choghadiya={choghadiyaData} />
-
-
-                            {/* Tabs */}
-                            <View style={styles.tabs}>
-                                <TouchableOpacity
-                                    style={[styles.tab, activeTab === 'pachakkhan' && styles.activeTab]}
-                                    onPress={() => setActiveTab('pachakkhan')}
-                                >
-                                    <Text style={[styles.tabText, activeTab === 'pachakkhan' && styles.activeTabText]}>
-                                        {i18n.t('tabs.pachakkhan')}
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.tab, activeTab === 'choghadiya' && styles.activeTab]}
-                                    onPress={() => setActiveTab('choghadiya')}
-                                >
-                                    <Text style={[styles.tabText, activeTab === 'choghadiya' && styles.activeTabText]}>
-                                        {i18n.t('tabs.choghadiya')}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {activeTab === 'pachakkhan' ? (
-                                <>
+                        <View style={styles.scrollContainer}>
+                            <ScrollView
+                                style={styles.scrollView}
+                                contentContainerStyle={[styles.content, styles.scrollContent]}
+                                showsVerticalScrollIndicator={false}
+                            >
+                                <Chart data={sunTimes} timingData={timingData} />
 
 
-                                    <View style={styles.timingsContainer}>
-                                        <View style={styles.column}>
-                                            {timingData.slice(0, 3).map((item) => (
-                                                <View key={item.id} style={styles.timingItem}>
-                                                    <View style={[
-                                                        styles.timingDot,
-                                                        {
-                                                            backgroundColor:
-                                                                item.id === '1' ? '#FFD700' : // Yellow
-                                                                    item.id === '2' ? '#32CD32' : // Green
-                                                                        item.id === '3' ? '#1E90FF' : // Blue
-                                                                            item.id === '4' ? '#9370DB' : // Purple
-                                                                                item.id === '5' ? '#FF6347' : // Tomato
-                                                                                    '#FFA500' // Orange
-                                                        }
-                                                    ]} />
-                                                    <View style={styles.timingTextContainer}>
-                                                        <Text style={styles.timingName}>{i18n.t(item.name)}</Text>
-                                                        <Text style={styles.timingTime}>
-                                                            {formatTime(item.time, i18n.locale)}
-                                                        </Text>
-                                                    </View>
-                                                </View>
-                                            ))}
-                                        </View>
-                                        <View style={styles.column}>
-                                            {timingData.slice(3).map((item) => (
-                                                <View key={item.id} style={styles.timingItem}>
-                                                    <View style={[
-                                                        styles.timingDot,
-                                                        {
-                                                            backgroundColor:
-                                                                item.id === '1' ? '#FFD700' : // Yellow
-                                                                    item.id === '2' ? '#32CD32' : // Green
-                                                                        item.id === '3' ? '#1E90FF' : // Blue
-                                                                            item.id === '4' ? '#9370DB' : // Purple
-                                                                                item.id === '5' ? '#FF6347' : // Tomato
-                                                                                    '#FFA500' // Orange
-                                                        }
-                                                    ]} />
-                                                    <View style={styles.timingTextContainer}>
-                                                        <Text style={styles.timingName}>{i18n.t(item.name)}</Text>
-                                                        <Text style={styles.timingTime}>
-                                                            {formatTime(item.time, i18n.locale)}
-                                                        </Text>
-                                                    </View>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </View>
-                                </>
-                            ) : (
-                                <View style={styles.choghadiyaContainer}>
-                                    <TouchableOpacity style={{ alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('sun')}>
-                                        <Icon name="sunny" size={20} color="#FFD700" />
+                                {/* Tabs */}
+                                <View style={styles.tabs}>
+                                    <TouchableOpacity
+                                        style={[styles.tab, activeTab === 'pachakkhan' && styles.activeTab]}
+                                        onPress={() => setActiveTab('pachakkhan')}
+                                    >
+                                        <Text style={[styles.tabText, activeTab === 'pachakkhan' && styles.activeTabText]}>
+                                            {i18n.t('tabs.pachakkhan')}
+                                        </Text>
                                     </TouchableOpacity>
-                                    <View style={{ alignItems: "center", width: "70%" }}>
-                                        {choghadiyaActiveTab === 'sun' ?
-                                            choghadiyaData.day.map((item) => (
-                                                <View key={item.id} style={styles.choghadityaYimingItem}>
-                                                    <View style={[
-                                                        styles.timingDot,
-                                                        {
-                                                            backgroundColor:
-                                                                item.color
-                                                        }
-                                                    ]} />
-                                                    <View style={styles.timingTextContainer}>
-                                                        <Text style={styles.timingName}>{i18n.t(item.name)}</Text>
-                                                    </View>
-                                                    <Text style={styles.timingTime}>
-                                                        {formatTime(item.time, i18n.locale)}
-                                                    </Text>
-                                                </View>
-                                            )) :
-                                            choghadiyaData.night.map((item) => (
-                                                <View key={item.id} style={styles.choghadityaYimingItem}>
-                                                    <View style={[
-                                                        styles.timingDot,
-                                                        {
-                                                            backgroundColor:
-                                                                item.color
-                                                        }
-                                                    ]} />
-                                                    <View style={styles.timingTextContainer}>
-                                                        <Text style={styles.timingName}>{i18n.t(item.name)}</Text>
-                                                    </View>
-                                                    <Text style={styles.timingTime}>
-                                                        {formatTime(item.time, i18n.locale)}
-                                                    </Text>
-                                                </View>
-                                            ))}
-                                    </View>
-                                    <TouchableOpacity style={{ alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('moon')}>
-                                        <Icon name="moon" size={20} color="#87CEEB" />
+                                    <TouchableOpacity
+                                        style={[styles.tab, activeTab === 'choghadiya' && styles.activeTab]}
+                                        onPress={() => setActiveTab('choghadiya')}
+                                    >
+                                        <Text style={[styles.tabText, activeTab === 'choghadiya' && styles.activeTabText]}>
+                                            {i18n.t('tabs.choghadiya')}
+                                        </Text>
                                     </TouchableOpacity>
                                 </View>
-                            )}
-                            <View style={{
-                                backgroundColor: 'rgba(128, 0, 0)',
-                            }}>
-                                <View style={styles.timingsHeader}>
-                                    <Text style={styles.todayText}>
-                                        {moment(selectedDate).isSame(moment(), 'day')
-                                            ? i18n.t('date.today')
-                                            : moment(selectedDate).format('DD MMMM YYYY')}
-                                    </Text>
-                                    <Text style={styles.dateText}>
-                                        {formatJainDate(jainDateInfo, i18n.locale)}
-                                    </Text>
-                                </View>
-                                {/* Menu Items */}
-                                <TouchableOpacity
-                                    key={menuItems[0].id}
-                                    style={styles.menuItem}
-                                    onPress={menuItems[0].onPress}
-                                >
-                                    <View style={styles.menuItemContent}>
-                                        <Text style={styles.menuItemTitle}>{menuItems[0].title}</Text>
-                                        <Text style={styles.menuItemSubtitle}>{menuItems[0].subtitle}</Text>
-                                    </View>
-                                    <Icon name="chevron-forward" size={20} color="#fff" />
-                                </TouchableOpacity>
-                                <View style={styles.menuContainer}>
-                                    {menuItems.slice(1).map((item) => (
-                                        <TouchableOpacity
-                                            key={item.id}
-                                            style={styles.menuItem}
-                                            onPress={() => {
 
-                                                // Handle menu item press
-                                                if (item.onPress) {
-                                                    item.onPress();
-                                                } else {
-                                                    console.log(`Pressed ${item.title}`);
-                                                }
-                                            }}
-                                        >
-                                            <View>
-                                                <Text style={styles.menuItemTitle}>{item.title}</Text>
-                                                {item.subtitle && (
-                                                    <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
-                                                )}
+                                {activeTab === 'pachakkhan' ? (
+                                    <>
+                                        <View style={styles.timingsContainer}>
+                                            <View style={styles.column}>
+                                                {timingData.slice(0, 3).map((item) => (
+                                                    <View key={item.id} style={styles.timingItem}>
+                                                        <View style={[
+                                                            styles.timingDot,
+                                                            {
+                                                                backgroundColor: item.color
+                                                            }
+                                                        ]} />
+                                                        <View style={styles.timingTextContainer}>
+                                                            <Text style={styles.timingName}>{item.name}:</Text>
+                                                            <Text style={styles.timingTime}>
+                                                                {formatTime(item.time, i18n.locale)}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                ))}
                                             </View>
-                                            <Icon name="chevron-forward" size={20} color="#fff" />
+                                            <View style={styles.column}>
+                                                {timingData.slice(3).map((item) => (
+                                                    <View key={item.id} style={styles.timingItem}>
+                                                        <View style={[
+                                                            styles.timingDot,
+                                                            {
+                                                                backgroundColor: item.color
+                                                            }
+                                                        ]} />
+                                                        <View style={styles.timingTextContainer}>
+                                                            <Text style={styles.timingName}>{item.name}:</Text>
+                                                            <Text style={styles.timingTime}>
+                                                                {formatTime(item.time, i18n.locale)}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    </>
+                                ) : (
+                                    <View style={styles.choghadiyaContainer}>
+                                        <TouchableOpacity style={{ alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('sun')}>
+                                            <Icon name="sunny" size={20} color="#FFD700" />
                                         </TouchableOpacity>
-                                    ))}
-                                </View>
+                                        <View style={{ alignItems: "center", paddingLeft: 10, width: "70%" }}>
+                                            {choghadiyaActiveTab === 'sun' ?
+                                                choghadiyaData.day.map((item, index) => (
+                                                    <View key={item.id} style={styles.choghadityaYimingItem}>
+                                                        <View style={[
+                                                            styles.timingDot,
+                                                            {
+                                                                backgroundColor: index % 2 === 1 ? '#FFD700' : 'gray'
 
-                                {/* Footer Buttons */}
-                                <View style={styles.footerButtons}>
-                                    <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('About')}>
-                                        <Text style={styles.footerButtonText}>{i18n.t('about')}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('FAQ')}>
-                                        <Text style={styles.footerButtonText}>{i18n.t('faq')}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </ScrollView>
-                    </View>
+                                                            }
+                                                        ]} />
+                                                        <View style={styles.timingTextContainer}>
+                                                            <Text style={styles.timingName}>{item.name}</Text>
+                                                        </View>
+                                                        <Text style={styles.timingTime}>
+                                                            {formatTime(item.time, i18n.locale)}
+                                                        </Text>
+                                                    </View>
+                                                )) :
+                                                choghadiyaData.night.map((item, index) => (
+                                                    <View key={item.id} style={styles.choghadityaYimingItem}>
+                                                        <View style={[
+                                                            styles.timingDot,
+                                                            {
+                                                                backgroundColor: index % 2 === 1 ? '#FFD700' : 'gray'
 
-                    {/* Language Selection Modal */}
-                    <Modal
-                        animationType="fade"
-                        transparent={true}
-                        visible={showLanguageModal}
-                        onRequestClose={() => setShowLanguageModal(false)}
-                    >
-                        <TouchableWithoutFeedback onPress={() => setShowLanguageModal(false)}>
-                            <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback>
-                                    <View style={styles.modalContent}>
-                                        <Text style={styles.modalTitle}>{i18n.t('selectLanguage')}</Text>
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.languageOption,
-                                                currentLanguage === 'en' && styles.selectedLanguage
-                                            ]}
-                                            onPress={() => handleLanguageChange('en')}
-                                        >
-                                            <Text style={styles.languageText}>{i18n.t('english')}</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.languageOption,
-                                                currentLanguage === 'hi' && styles.selectedLanguage
-                                            ]}
-                                            onPress={() => handleLanguageChange('hi')}
-                                        >
-                                            <Text style={styles.languageText}>{i18n.t('hindi')}</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.languageOption,
-                                                currentLanguage === 'gu' && styles.selectedLanguage,
-                                                { borderBottomWidth: 0 }
-                                            ]}
-                                            onPress={() => handleLanguageChange('gu')}
-                                        >
-                                            <Text style={styles.languageText}>{i18n.t('gujarati')}</Text>
+                                                            }
+                                                        ]} />
+                                                        <View style={styles.timingTextContainer}>
+                                                            <Text style={styles.timingName}>{item.name}</Text>
+                                                        </View>
+                                                        <Text style={styles.timingTime}>
+                                                            {formatTime(item.time, i18n.locale)}
+                                                        </Text>
+                                                    </View>
+                                                ))}
+                                        </View>
+                                        <TouchableOpacity style={{ alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('moon')}>
+                                            <Icon name="moon" size={20} color="#87CEEB" />
                                         </TouchableOpacity>
                                     </View>
-                                </TouchableWithoutFeedback>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </Modal>
+                                )}
+                                <View style={{
+                                    backgroundColor: 'rgba(128, 0, 0)',
+                                }}>
+                                    <View style={styles.timingsHeader}>
+                                        <Text style={styles.todayText}>
+                                            {moment(selectedDate).isSame(moment(), 'day')
+                                                ? i18n.t('date.today')
+                                                : moment(selectedDate).format('DD MMMM YYYY')}
+                                        </Text>
+                                        <Text style={styles.dateText}>
+                                            {language == "en" ? globalData.guj_month_english_name : language == "gu" ? globalData.guj_month_gujarati_name : globalData.guj_month_hindi_name} {" "}{i18n.t(`date.${globalData.paksha_type?.toLowerCase()}`)} {" "}{convertDigitsOnly(globalData.tithi, i18n.locale)}
+                                        </Text>
+                                    </View>
+                                    {/* Menu Items */}
+                                    <TouchableOpacity
+                                        key={menuItems[0].id}
+                                        style={styles.menuItem}
+                                        onPress={menuItems[0].onPress}
+                                    >
+                                        <View style={styles.menuItemContent}>
+                                            <Text style={styles.menuItemTitle}>{menuItems[0].title}</Text>
+                                            <Text style={styles.menuItemSubtitle}>{menuItems[0].subtitle}</Text>
+                                        </View>
+                                        <Icon name="chevron-forward" size={20} color="#fff" />
+                                    </TouchableOpacity>
+                                    <View style={styles.menuContainer}>
+                                        {menuItems.slice(1).map((item) => (
+                                            <TouchableOpacity
+                                                key={item.id}
+                                                style={styles.menuItem}
+                                                onPress={() => {
 
-                    {/* City Selection Modal */}
-                    <Modal
-                        animationType="fade"
-                        transparent={true}
-                        visible={showCityModal}
-                        onRequestClose={() => setShowCityModal(false)}
-                    >
-                        <TouchableWithoutFeedback onPress={() => setShowCityModal(false)}>
-                            <View style={styles.modalOverlay}>
-                                <TouchableWithoutFeedback>
-                                    <View style={styles.modalContent}>
-                                        <Text style={styles.modalTitle}>Select City</Text>
-                                        {((selectedCity && selectedCity.city) || (route.params && route.params.city)) && (
-                                            <Text style={styles.selectedHint}>
-                                                Current: {((selectedCity && selectedCity.city) || (route.params && route.params.city))}
-                                            </Text>
-                                        )}
-                                        <View style={{ paddingHorizontal: 15, paddingBottom: 10 }}>
-                                            <TextInput
-                                                style={styles.searchInput}
-                                                placeholder="Search city/state/country"
-                                                placeholderTextColor="#999"
-                                                value={citySearch}
-                                                onChangeText={setCitySearch}
+                                                    // Handle menu item press
+                                                    if (item.onPress) {
+                                                        item.onPress();
+                                                    } else {
+                                                        console.log(`Pressed ${item.title}`);
+                                                    }
+                                                }}
+                                            >
+                                                <View>
+                                                    <Text style={styles.menuItemTitle}>{item.title}</Text>
+                                                    {item.subtitle && (
+                                                        <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                                                    )}
+                                                </View>
+                                                <Icon name="chevron-forward" size={20} color="#fff" />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    {/* Footer Buttons */}
+                                    <View style={styles.footerButtons}>
+                                        <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('About')}>
+                                            <Text style={styles.footerButtonText}>{i18n.t('about')}</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('FAQ')}>
+                                            <Text style={styles.footerButtonText}>{i18n.t('faq')}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </ScrollView>
+                        </View>
+
+                        {/* Language Selection Modal */}
+                        <Modal
+                            animationType="fade"
+                            transparent={true}
+                            visible={showLanguageModal}
+                            onRequestClose={() => setShowLanguageModal(false)}
+                        >
+                            <TouchableWithoutFeedback onPress={() => setShowLanguageModal(false)}>
+                                <View style={styles.modalOverlay}>
+                                    <TouchableWithoutFeedback>
+                                        <View style={styles.modalContent}>
+                                            <Text style={styles.modalTitle}>{i18n.t('selectLanguage')}</Text>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.languageOption,
+                                                    currentLanguage === 'en' && styles.selectedLanguage
+                                                ]}
+                                                onPress={() => handleLanguageChange('en')}
+                                            >
+                                                <Text style={styles.languageText}>{i18n.t('english')}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.languageOption,
+                                                    currentLanguage === 'hi' && styles.selectedLanguage
+                                                ]}
+                                                onPress={() => handleLanguageChange('hi')}
+                                            >
+                                                <Text style={styles.languageText}>{i18n.t('hindi')}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.languageOption,
+                                                    currentLanguage === 'gu' && styles.selectedLanguage,
+                                                    { borderBottomWidth: 0 }
+                                                ]}
+                                                onPress={() => handleLanguageChange('gu')}
+                                            >
+                                                <Text style={styles.languageText}>{i18n.t('gujarati')}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableWithoutFeedback>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Modal>
+
+                        {/* City Selection Modal */}
+                        <Modal
+                            animationType="fade"
+                            transparent={true}
+                            visible={showCityModal}
+                            onRequestClose={() => setShowCityModal(false)}
+                        >
+                            <TouchableWithoutFeedback onPress={() => setShowCityModal(false)}>
+                                <View style={styles.modalOverlay}>
+                                    <TouchableWithoutFeedback>
+                                        <View style={styles.modalContent}>
+                                            <Text style={styles.modalTitle}>Select City</Text>
+                                            {((selectedCity && selectedCity.city) || (route.params && route.params.city)) && (
+                                                <Text style={styles.selectedHint}>
+                                                    Current: {((selectedCity && selectedCity.city) || (route.params && route.params.city))}
+                                                </Text>
+                                            )}
+                                            <View style={{ paddingHorizontal: 15, paddingBottom: 10 }}>
+                                                <TextInput
+                                                    style={styles.searchInput}
+                                                    placeholder="Search city/state/country"
+                                                    placeholderTextColor="#999"
+                                                    value={citySearch}
+                                                    onChangeText={setCitySearch}
+                                                />
+                                            </View>
+                                            <FlatList
+                                                data={cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase()))}
+                                                keyExtractor={(item, index) => `${item.name}-${index}`}
+                                                renderItem={({ item }) => (
+                                                    <TouchableOpacity
+                                                        style={[
+                                                            styles.cityOption,
+                                                            selectedCity && selectedCity.city === item.city && { backgroundColor: '#f8f8f8' }
+                                                        ]}
+                                                        onPress={async () => {
+                                                            try {
+                                                                await AsyncStorage.setItem('selectedCity', JSON.stringify({
+                                                                    name: item.name,
+                                                                    lat: item.lat,
+                                                                    long: item.long,
+                                                                    country_code: item.country_code,
+                                                                    timezone: item.timezone
+                                                                }));
+                                                            } catch (e) { }
+                                                            setSelectedCity(item);
+                                                            setShowCityModal(false);
+                                                        }}
+                                                    >
+                                                        <Text style={styles.cityText}>{item.name}</Text>
+                                                        <Text style={styles.citySubText}>{item.timezone} • {item.lat}, {item.long}</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                                style={{ maxHeight: 350 }}
                                             />
                                         </View>
-                                        <FlatList
-                                            data={cities.filter(c => c.name.toLowerCase().includes(citySearch.toLowerCase()))}
-                                            keyExtractor={(item, index) => `${item.name}-${index}`}
-                                            renderItem={({ item }) => (
-                                                <TouchableOpacity
-                                                    style={[
-                                                        styles.cityOption,
-                                                        selectedCity && selectedCity.city === item.city && { backgroundColor: '#f8f8f8' }
-                                                    ]}
-                                                    onPress={async () => {
-                                                        try {
-                                                            await AsyncStorage.setItem('selectedCity', JSON.stringify({
-                                                                name: item.name,
-                                                                lat: item.lat,
-                                                                long: item.long,
-                                                                country_code: item.country_code,
-                                                                timezone: item.timezone
-                                                            }));
-                                                        } catch (e) { }
-                                                        setSelectedCity(item);
-                                                        setShowCityModal(false);
-                                                    }}
-                                                >
-                                                    <Text style={styles.cityText}>{item.name}</Text>
-                                                    <Text style={styles.citySubText}>{item.timezone} • {item.lat}, {item.long}</Text>
-                                                </TouchableOpacity>
-                                            )}
-                                            style={{ maxHeight: 350 }}
-                                        />
-                                    </View>
-                                </TouchableWithoutFeedback>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </Modal>
-                </View>
-            </View>
+                                    </TouchableWithoutFeedback>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </Modal>
+                    </View>
+                </View>}
         </ImageBackground>
     );
 };
@@ -884,45 +1017,50 @@ const styles = StyleSheet.create({
         // paddingTop: 10,
         // marginBottom: 20,
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
     },
     column: {
-        width: '48%',
+        width: '49%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 5,
     },
     timingItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: 10,
-        padding: 10,
+        justifyContent: 'space-between',
+        marginBottom: 5,
+
     },
     choghadityaYimingItem: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: 5,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         borderRadius: 10,
-        padding: 10,
     },
     timingDot: {
         width: 12,
         height: 12,
         borderRadius: 6,
-        marginRight: 15,
+
     },
     timingTextContainer: {
         flex: 1,
-        flexDirection: 'column',
-        marginLeft: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 2,
     },
     timingName: {
+        width: '45%',
         color: 'white',
-        fontSize: 16,
+        fontSize: 13,
     },
     timingTime: {
+        width: '55%',
         color: 'white',
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
         opacity: 0.8,
     },

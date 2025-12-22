@@ -5,14 +5,15 @@ import { useNavigation } from '@react-navigation/native';
 import i18n, { getCurrentLanguage } from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import database, { getKalyanakEvents } from '../database/database'; // We'll create this function
-import { formatJainDate } from '../utils/numberConverter';
+import { convertNumber, formatJainDate } from '../utils/numberConverter';
+import { getFrontPanchKalyanaks } from '../component/global';
 import { useRoute } from '@react-navigation/native';
 export const useLanguage = () => {
     const [language, setLanguage] = useState(getCurrentLanguage());
 
     useEffect(() => {
         const interval = setInterval(() => {
-            const currentLang = getCurrentLanguage();
+            const currentLang = i18n.locale
             if (currentLang !== language) {
                 setLanguage(currentLang);
             }
@@ -32,14 +33,14 @@ const KalyanakScreen = () => {
     const [kalyanakData, setKalyanakData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
+    const [selectedDate, setSelectedDate] = useState(route.params?.selectedDate || new Date().toISOString().split('T')[0]);
     useEffect(() => {
         const fetchKalyanakEvents = async () => {
             try {
                 setLoading(true);
-                const events = await getKalyanakEvents();
-                console.log(events)
-                setKalyanakData(events);
+                const events = await getFrontPanchKalyanaks(selectedDate);
+                console.log("Kalyanak events:", events)
+                setKalyanakData(events.data);
 
             } catch (err) {
                 console.error("Error fetching kalyanak events:", err);
@@ -60,7 +61,8 @@ const KalyanakScreen = () => {
     const groupedData = React.useMemo(() => {
         const map = new Map();
         (kalyanakData || []).forEach(evt => {
-            const month = getMonthFromJainDate(evt?.jain_date);
+
+            const month = getMonthFromJainDate(language === 'gu' ? evt.guj_month_gujarati_name : language === 'hi' ? evt.hi_month_hindi_name : evt.guj_month_english_name);
             if (!map.has(month)) map.set(month, []);
             map.get(month).push(evt);
         });
@@ -72,72 +74,28 @@ const KalyanakScreen = () => {
         });
         return result;
     }, [kalyanakData]);
-    const [selectedDate, setSelectedDate] = useState(route.params?.selectedDate || new Date());
 
-    const handleEventPress = async (event) => {
-        try {
-            // Get the gregorian date for the selected kalyanak
-            const calendarData = await getCalendarDataForJainDate(event.jain_date);
 
-            if (calendarData && calendarData.length > 0) {
-                const gregorianDate = calendarData[0].gregorian_date;
-                navigation.navigate('Home', {
-                    selectedDate: new Date(gregorianDate),
-                    scrollToKalyanak: event.id // Optional: to highlight the event in Home
-                });
-            } else {
-                // Fallback to current date if no matching date found
-                navigation.navigate('Home', {
-                    selectedDate: new Date(),
-                    scrollToKalyanak: event.id
-                });
-            }
-        } catch (error) {
-            console.error('Error navigating to date:', error);
-            // Navigate to home with current date as fallback
-            navigation.navigate('Home', {
-                selectedDate: new Date(),
-                scrollToKalyanak: event.id
-            });
-        }
-    };
-
-    // Add this function to get calendar data for a specific jain date
-    const getCalendarDataForJainDate = async (jainDate) => {
-        return new Promise((resolve, reject) => {
-            database.transaction(tx => {
-                tx.executeSql(
-                    `SELECT * FROM tblCalendar WHERE jain_date_full = ?`,
-                    [jainDate],
-                    (_, result) => {
-                        const rows = [];
-                        for (let i = 0; i < result.rows.length; i++) {
-                            rows.push(result.rows.item(i));
-                        }
-                        resolve(rows);
-                    },
-                    (_, error) => reject(error)
-                );
-            });
-        });
-    };
     const renderMonthSection = ({ item }) => {
         if (item?.type === 'header') {
             return (
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>
-                        {i18n.t(`date.month.${item.title.toLowerCase()}`) || item.title}
+                        {item.title}
                     </Text>
                 </View>
             );
         }
         const event = item;
         // console.log('Event data:', event); // Debug log to check the event object
-        console.log('Tirthankar name:', event?.tirthankar_name); // Debug log to check the tirthankar_name
+        // console.log('Tirthankar name:', event?.tirthankar_name); // Debug log to check the tirthankar_name
         return (
             <TouchableOpacity style={styles.eventCard}
                 onPress={() => {
-                    handleEventPress(event)
+                    navigation.navigate('Home', {
+                        selectedDate: event?.date_calendar,
+                        scrollToKalyanak: event.id // Optional: to highlight the event in Home
+                    });
                 }}
             >
                 <View style={styles.iconCircle}>
@@ -146,18 +104,11 @@ const KalyanakScreen = () => {
                 <View style={{ flex: 1 }}>
 
                     <Text style={styles.eventTitle}>
-                        {i18n.t(`tirthankarNames.${event?.tirthankar_name?.trim()}`) ||
-                            i18n.t('tirthankarNames.' + event?.tirthankar_name?.trim()?.replace(/\s+/g, '')) ||
-                            event?.tirthankar_name}
+                        {language == "gu" ? event?.tirthankar_name_gujarati : language == "hi" ? event?.hi_tirthankar_name : event?.tirthankar_name}
                     </Text>
                     <Text style={styles.eventSubtitle}>
-                        {i18n.t(
-                            `kalyanak.${(event?.event_name || '')
-                                .trim()
-                                .toLowerCase()
-                                .replace(/\s+/g, '')}`
-                        )}
-                        {event?.jain_date ? ` • ${formatJainDate(event.jain_date, i18n.locale)}` : ''}
+                        {language == "gu" ? event?.event_name_gujarati : language == "hi" ? event?.event_name_hindi : event?.event_name}
+                        {event?.tithi ? ` • ${convertNumber(event.tithi, i18n.locale)}` : ''}
                     </Text>
                 </View>
                 <Icon name="chevron-right" size={24} color="#9E9E9E" />

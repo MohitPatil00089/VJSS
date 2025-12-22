@@ -120,11 +120,14 @@ const JainCalendarScreen = ({ navigation }) => {
         setSelectedDate(date);
         // Format the date as YYYY-MM-DD and create a full ISO string
         const [year, month, day] = date.split('-');
-        const dateObj = new Date(year, month - 1, day);
-        const isoDate = dateObj.toISOString();
+
+        const dateObj = new Date(Date.UTC(year, month - 1, day));
+        const yyyyMmDd = dateObj.toISOString().slice(0, 10);
+
+        console.log("yyyyMmDd", yyyyMmDd); // correct date
 
         navigation.navigate('Home', {
-            selectedDate: isoDate // Pass as ISO string
+            selectedDate: yyyyMmDd // Pass as ISO string
         });
         await loadEvents(date);
     };

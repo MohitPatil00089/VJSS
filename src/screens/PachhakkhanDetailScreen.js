@@ -13,37 +13,50 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
     const { pachhakkhanId, title, content } = route.params;
     const [activeTab, setActiveTab] = useState('gujarati');
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const soundRef = useRef(null);
     const intervalRef = useRef(null);
-
+    console.log("content", content)
     useEffect(() => {
-        Sound.setCategory('Playback');
-        const sound = new Sound(content?.audio, Sound.MAIN_BUNDLE, (error) => {
+        if (!content?.audio) {
+            console.log('No audio URL provided');
+            return;
+        }
+
+        setIsLoading(true);
+
+        // Stop any existing sound
+        if (soundRef.current) {
+            soundRef.current.stop();
+            soundRef.current.release();
+        }
+
+        // Initialize the sound player with the audio URL
+        soundRef.current = new Sound(content.audio, '', (error) => {
+            setIsLoading(false);
             if (error) {
-                console.log('Error loading sound:', content?.audio);
-                ToastAndroid.show('Audio not available. Coming soon', ToastAndroid.LONG);
+                console.log('Failed to load sound:', error);
+                ToastAndroid.show('Failed to load audio', ToastAndroid.SHORT);
                 return;
             }
-
-            console.log('Sound loaded successfully');
-            setDuration(sound.getDuration());
-            soundRef.current = sound;
-
-            intervalRef.current = setInterval(() => {
-                sound.getCurrentTime(sec => setCurrentTime(sec));
-            }, 1000);
+            console.log('Audio loaded successfully');
+            setDuration(soundRef.current.getDuration());
         });
 
+        // Clean up on unmount
         return () => {
             if (soundRef.current) {
                 soundRef.current.stop();
                 soundRef.current.release();
+                soundRef.current = null;
             }
-            clearInterval(intervalRef.current);
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
         };
-    }, []);
+    }, [content?.audio]);
 
 
     // Handle play/pause
@@ -95,8 +108,42 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
+    const togglePlayPause = () => {
+        if (!soundRef.current) return;
+
+        if (isPlaying) {
+            soundRef.current.pause();
+            setIsPlaying(false);
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        } else {
+            soundRef.current.play((success) => {
+                if (success) {
+                    console.log('Playback finished');
+                    setIsPlaying(false);
+                    setCurrentTime(0);
+                    if (intervalRef.current) {
+                        clearInterval(intervalRef.current);
+                    }
+                } else {
+                    console.log('Playback failed');
+                    ToastAndroid.show('Failed to play audio', ToastAndroid.SHORT);
+                }
+            });
+            setIsPlaying(true);
+
+            // Update progress
+            intervalRef.current = setInterval(() => {
+                soundRef.current?.getCurrentTime((seconds) => {
+                    setCurrentTime(seconds);
+                });
+            }, 500);
+        }
+    };
+
 
     const selectedContent = content || {
         gujarati: '',
@@ -124,36 +171,37 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                 </View>
 
                 {/* Audio Player */}
-                <View style={styles.audioPlayer}>
-                    <View style={styles.progressContainer}>
-                        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-                        <Slider
-                            style={styles.progressBar}
-                            minimumValue={0}
-                            maximumValue={duration || 1}
-                            value={currentTime}
-                            onSlidingComplete={onSliderValueChange}
-                            minimumTrackTintColor="#4CAF50"
-                            maximumTrackTintColor="#BDBDBD"
-                            thumbTintColor="#4CAF50"
-                        />
-                        <View style={styles.timeContainer}>
-
-                            <Text style={styles.timeText}>
-                                {formatTime(duration)}
-                            </Text>
+                {content?.audio && (
+                    <View style={{ backgroundColor: '#f5f5f5', }}>
+                        <View style={styles.audioPlayer}>
+                            <View style={styles.progressContainer}>
+                                <View style={styles.progressBar}>
+                                    <View
+                                        style={[
+                                            styles.progress,
+                                            { width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }
+                                        ]}
+                                    />
+                                </View>
+                                <View style={styles.timeContainer}>
+                                    <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+                                    <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                                </View>
+                            </View>
                         </View>
-                    </View>
-                    <View style={styles.controls}>
-                        <TouchableOpacity onPress={togglePlayback} style={styles.playButton}>
+                        <TouchableOpacity
+                            onPress={togglePlayPause}
+                            style={styles.playButton}
+                            disabled={isLoading}
+                        >
                             <Icon
                                 name={isPlaying ? 'pause' : 'play-arrow'}
-                                size={32}
-                                color="#8B4513"
+                                size={24}
+                                color="#fff"
                             />
                         </TouchableOpacity>
                     </View>
-                </View>
+                )}
 
                 {/* Tabs */}
                 <View style={styles.tabContainer}>
@@ -190,12 +238,12 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                     </Text>
 
                     {/* Detail Section */}
-                    <View style={styles.detailContainer}>
+                    {/* <View style={styles.detailContainer}>
                         <Text style={styles.detailHeader}>Detail</Text>
                         <Text style={styles.detailText}>
                             {selectedContent.detail}
                         </Text>
-                    </View>
+                    </View> */}
                 </ScrollView>
             </View>
         </SafeAreaView>
@@ -230,20 +278,33 @@ const styles = StyleSheet.create({
         width: 30,
     },
     audioPlayer: {
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    progressContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 12,
+        marginTop: 15,
+    },
+    progressContainer: {
+        flex: 1,
+        marginRight: 12,
     },
     progressBar: {
-        flex: 1,
         height: 4,
-        marginHorizontal: 10,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 2,
+        marginTop: 4,
+        overflow: 'hidden',
+    },
+    progress: {
+        height: '100%',
+        backgroundColor: '#9E1B17',
+        width: '0%',
+    },
+    timeContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 4,
     },
     timeText: {
         fontSize: 12,
@@ -257,17 +318,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     playButton: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#f0e6d2',
+        alignSelf: 'center',
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#9E1B17',
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        marginBottom: 15,
     },
     tabContainer: {
         flexDirection: 'row',

@@ -9,14 +9,16 @@ import {
     StatusBar,
     Dimensions,
     Modal,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
+    ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { convertDigitsOnly, formatJainDate } from '../utils/numberConverter';
 import i18n from '../i18n/i18n';
+import { getFrontPanchKalyanaks } from '../component/global';
 
-const TirthankarsScreen = ({ navigation }) => {
+const TirthankarsScreen = ({ navigation, route }) => {
 
 
     const tirthankarDetails = {
@@ -217,48 +219,64 @@ const TirthankarsScreen = ({ navigation }) => {
     const [tirthankars, setTirthankars] = useState([]);
     const [selectedImage, setSelectedImage] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [language, setLanguage] = useState(i18n.locale);
+    const [selectedDate, setSelectedDate] = useState(route.params?.selectedDate || new Date().toISOString().split('T')[0]);
 
     // Get all tirthankar images
     useEffect(() => {
+
         const loadTirthankars = async () => {
+            // try {
+            //     const tirthankarList = [
+            //         { id: 1, name: 'Shri Adinath Bhagwan', image: require('./../assets/tirthankara/01ShriAdinathBhagwan.jpg') },
+            //         { id: 2, name: 'Shri Ajitnath Bhagwan', image: require('./../assets/tirthankara/02ShriAjitnathBhagwan.jpg') },
+            //         { id: 3, name: 'Shri Sambhavnath Bhagwan', image: require('./../assets/tirthankara/03ShriSambhavnathBhagwan.jpg') },
+            //         { id: 4, name: 'Shri Abhinandan Swami', image: require('./../assets/tirthankara/04ShriAbhinandanSwami.jpg') },
+            //         { id: 5, name: 'Shri Sumatinath Bhagwan', image: require('./../assets/tirthankara/05ShriSumatinathBhagwan.jpg') },
+            //         { id: 6, name: 'Shri Padmaprabhu Swami', image: require('./../assets/tirthankara/06ShriPadmaprabhuSwami.jpg') },
+            //         { id: 7, name: 'Shri Suparshva Bhagwan', image: require('./../assets/tirthankara/07ShriSuparshvaBhagwan.jpg') },
+            //         { id: 8, name: 'Shri Chandraprabhu Swami', image: require('./../assets/tirthankara/08ShriChandraprabhuSwami.jpg') },
+            //         { id: 9, name: 'Shri Suvidhinath Swami', image: require('./../assets/tirthankara/09ShriSuvidhinathSwami.jpg') },
+            //         { id: 10, name: 'Shri Shitalnath Bhagwan', image: require('./../assets/tirthankara/10ShriShitalnathBhagwan.jpg') },
+            //         { id: 11, name: 'Shri Shreyanshnath Swami', image: require('./../assets/tirthankara/11ShriShreyanshnathSwami.jpg') },
+            //         { id: 12, name: 'Shri Vasupujya Swami', image: require('./../assets/tirthankara/12ShriVasupujyaSwami.jpg') },
+            //         { id: 13, name: 'Shri Vimalnath Bhagwan', image: require('./../assets/tirthankara/13ShriVimalnathBhagwan.jpg') },
+            //         { id: 14, name: 'Shri Anantnath Bhagwan', image: require('./../assets/tirthankara/14ShriAnantnathBhagwan.jpg') },
+            //         { id: 15, name: 'Shri Dharmanath Bhagwan', image: require('./../assets/tirthankara/15ShriDharmanathBhagwan.jpg') },
+            //         { id: 16, name: 'Shri Shantinath Bhagwan', image: require('./../assets/tirthankara/16ShriShantinathBhagwan.jpg') },
+            //         { id: 17, name: 'Shri Kunthunath Bhagwan', image: require('./../assets/tirthankara/17ShriKunthunathBhagwan.jpg') },
+            //         { id: 18, name: 'Shri Arnath Bhagwan', image: require('./../assets/tirthankara/18ShriArnathBhagwan.jpg') },
+            //         { id: 19, name: 'Shri Mallinath Bhagwan', image: require('./../assets/tirthankara/19ShriMallinathBhagwan.jpg') },
+            //         { id: 20, name: 'Shri Munisuvrat Swami', image: require('./../assets/tirthankara/20ShriMunisuvratSwami.jpg') },
+            //         { id: 21, name: 'Shri Naminath Bhagwan', image: require('./../assets/tirthankara/21ShriNaminathBhagwan.jpg') },
+            //         { id: 22, name: 'Shri Neminath Bhagwan', image: require('./../assets/tirthankara/22ShriNeminathBhagwan.jpg') },
+            //         { id: 23, name: 'Shri Parshvanath Bhagwan', image: require('./../assets/tirthankara/23ShriParshvanathBhagwan.jpg') },
+            //         { id: 24, name: 'Shri Mahavir Swami', image: require('./../assets/tirthankara/24ShriMahavirSwami.jpg') },
+            //     ];
+            //     setTirthankars(tirthankarList);
+            // } catch (error) {
+            //     console.error('Error loading tirthankars:', error);
+            // }
             try {
-                const tirthankarList = [
-                    { id: 1, name: 'Shri Adinath Bhagwan', image: require('./../assets/tirthankara/01ShriAdinathBhagwan.jpg') },
-                    { id: 2, name: 'Shri Ajitnath Bhagwan', image: require('./../assets/tirthankara/02ShriAjitnathBhagwan.jpg') },
-                    { id: 3, name: 'Shri Sambhavnath Bhagwan', image: require('./../assets/tirthankara/03ShriSambhavnathBhagwan.jpg') },
-                    { id: 4, name: 'Shri Abhinandan Swami', image: require('./../assets/tirthankara/04ShriAbhinandanSwami.jpg') },
-                    { id: 5, name: 'Shri Sumatinath Bhagwan', image: require('./../assets/tirthankara/05ShriSumatinathBhagwan.jpg') },
-                    { id: 6, name: 'Shri Padmaprabhu Swami', image: require('./../assets/tirthankara/06ShriPadmaprabhuSwami.jpg') },
-                    { id: 7, name: 'Shri Suparshva Bhagwan', image: require('./../assets/tirthankara/07ShriSuparshvaBhagwan.jpg') },
-                    { id: 8, name: 'Shri Chandraprabhu Swami', image: require('./../assets/tirthankara/08ShriChandraprabhuSwami.jpg') },
-                    { id: 9, name: 'Shri Suvidhinath Swami', image: require('./../assets/tirthankara/09ShriSuvidhinathSwami.jpg') },
-                    { id: 10, name: 'Shri Shitalnath Bhagwan', image: require('./../assets/tirthankara/10ShriShitalnathBhagwan.jpg') },
-                    { id: 11, name: 'Shri Shreyanshnath Swami', image: require('./../assets/tirthankara/11ShriShreyanshnathSwami.jpg') },
-                    { id: 12, name: 'Shri Vasupujya Swami', image: require('./../assets/tirthankara/12ShriVasupujyaSwami.jpg') },
-                    { id: 13, name: 'Shri Vimalnath Bhagwan', image: require('./../assets/tirthankara/13ShriVimalnathBhagwan.jpg') },
-                    { id: 14, name: 'Shri Anantnath Bhagwan', image: require('./../assets/tirthankara/14ShriAnantnathBhagwan.jpg') },
-                    { id: 15, name: 'Shri Dharmanath Bhagwan', image: require('./../assets/tirthankara/15ShriDharmanathBhagwan.jpg') },
-                    { id: 16, name: 'Shri Shantinath Bhagwan', image: require('./../assets/tirthankara/16ShriShantinathBhagwan.jpg') },
-                    { id: 17, name: 'Shri Kunthunath Bhagwan', image: require('./../assets/tirthankara/17ShriKunthunathBhagwan.jpg') },
-                    { id: 18, name: 'Shri Arnath Bhagwan', image: require('./../assets/tirthankara/18ShriArnathBhagwan.jpg') },
-                    { id: 19, name: 'Shri Mallinath Bhagwan', image: require('./../assets/tirthankara/19ShriMallinathBhagwan.jpg') },
-                    { id: 20, name: 'Shri Munisuvrat Swami', image: require('./../assets/tirthankara/20ShriMunisuvratSwami.jpg') },
-                    { id: 21, name: 'Shri Naminath Bhagwan', image: require('./../assets/tirthankara/21ShriNaminathBhagwan.jpg') },
-                    { id: 22, name: 'Shri Neminath Bhagwan', image: require('./../assets/tirthankara/22ShriNeminathBhagwan.jpg') },
-                    { id: 23, name: 'Shri Parshvanath Bhagwan', image: require('./../assets/tirthankara/23ShriParshvanathBhagwan.jpg') },
-                    { id: 24, name: 'Shri Mahavir Swami', image: require('./../assets/tirthankara/24ShriMahavirSwami.jpg') },
-                ];
-                setTirthankars(tirthankarList);
-            } catch (error) {
-                console.error('Error loading tirthankars:', error);
+                setLoading(true);
+                const events = await getFrontPanchKalyanaks(selectedDate);
+                console.log("Tirthankar events:", events)
+                setTirthankars(events.data);
+
+            } catch (err) {
+                console.error("Error fetching tirthankar events:", err);
+                setError("Failed to load tirthankar events");
+            } finally {
+                setLoading(false);
             }
         };
 
         loadTirthankars();
     }, []);
 
-    const renderItem = ({ item }) => {
-        const translatedName = tirthankarDetails[item.id].name;
+    const renderItem = ({ item, index }) => {
+        // const translatedName = tirthankarDetails[item.id].name;
         return (
             <TouchableOpacity
                 style={styles.itemContainer}
@@ -267,12 +285,10 @@ const TirthankarsScreen = ({ navigation }) => {
                     setModalVisible(true);
                 }}
             >
-                <Text style={styles.index}>{convertDigitsOnly(item.id, i18n.locale)}</Text>
-                <Image source={item.image} style={styles.image} resizeMode="contain" />
+                <Text style={styles.index}>{convertDigitsOnly(index + 1, i18n.locale)}</Text>
+                <Image source={{ uri: item?.tirthankar_image }} style={styles.image} resizeMode="contain" />
                 <Text style={styles.name} numberOfLines={2} ellipsizeMode="tail">
-                    {i18n.t(`tirthankar.${item.id}`, {
-                        defaultValue: tirthankarDetails[item.id]?.name || item.name
-                    })}
+                    {language === 'gu' ? item?.tirthankar_name_gujarati : language === 'hi' ? item?.tirthankar_name_hindi : item?.tirthankar_name}
                 </Text>
             </TouchableOpacity>
         );
@@ -280,89 +296,91 @@ const TirthankarsScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
-            <View style={styles.container}>
-                <StatusBar barStyle="light-content" backgroundColor="#9E1B17" />
-
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Icon name="arrow-back" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Tirthankars</Text>
-                    <View style={styles.headerRight} />
+            {loading ? (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color="#9E1B17" />
                 </View>
+            ) :
+                <View style={styles.container}>
+                    <StatusBar barStyle="light-content" backgroundColor="#9E1B17" />
 
-                {/* Tirthankars Grid */}
-                <FlatList
-                    data={tirthankars}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id.toString()}
-                    numColumns={3}
-                    contentContainerStyle={styles.grid}
-                    columnWrapperStyle={styles.columnWrapper}
-                />
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <Icon name="arrow-back" size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Tirthankars</Text>
+                        <View style={styles.headerRight} />
+                    </View>
 
-                {/* Full Screen Modal */}
-                <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContent}>
-                                {selectedImage && (
-                                    <>
-                                        <Text style={styles.detailTitle}>
-                                            {i18n.t('tirthankara', { defaultValue: 'Tirthankara' })}: {' '}
-                                            {i18n.t(`tirthankar.${selectedImage.id}`, {
-                                                defaultValue: tirthankarDetails[selectedImage.id]?.name || selectedImage.name
-                                            })}
-                                        </Text>
-                                        <Image
-                                            source={selectedImage.image}
-                                            style={styles.fullImage}
-                                            resizeMode="contain"
-                                        />
-                                        <View style={styles.detailsList}>
-                                            <View style={styles.detailRow}>
-                                                <Text style={styles.detailLabel}>{i18n.t('kalyanak.moksha')}</Text>
-                                                <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.moksha, i18n.locale) || '-'}</Text>
+                    {/* Tirthankars Grid */}
+                    <FlatList
+                        data={tirthankars}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.id.toString()}
+                        numColumns={3}
+                        contentContainerStyle={styles.grid}
+                        columnWrapperStyle={styles.columnWrapper}
+                    />
+
+                    {/* Full Screen Modal */}
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={modalVisible}
+                        onRequestClose={() => setModalVisible(false)}
+                    >
+                        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+                            <View style={styles.modalOverlay}>
+                                <View style={styles.modalContent}>
+                                    {selectedImage && (
+                                        <>
+                                            <Text style={styles.detailTitle}>
+                                                {language === 'gu' ? selectedImage?.tirthankar_name_gujarati : language === 'hi' ? selectedImage?.tirthankar_name_hindi : selectedImage?.tirthankar_name}
+                                            </Text>
+                                            <Image
+                                                source={{ uri: selectedImage?.tirthankar_image }}
+                                                style={styles.fullImage}
+                                                resizeMode="contain"
+                                            />
+                                            <View style={styles.detailsList}>
+                                                <View style={styles.detailRow}>
+                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.moksha')}</Text>
+                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.moksha, i18n.locale) || '-'}</Text>
+                                                </View>
+                                                <View style={styles.detailRow}>
+                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.kevalGyan')}</Text>
+                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.kevalgyn, i18n.locale) || '-'}</Text>
+                                                </View>
+                                                <View style={styles.detailRow}>
+                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.diksha')}</Text>
+                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.diksha, i18n.locale) || '-'}</Text>
+                                                </View>
+                                                <View style={styles.detailRow}>
+                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.janma')}</Text>
+                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.janma, i18n.locale) || '-'}</Text>
+                                                </View>
+                                                <View style={styles.detailRow}>
+                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.chyavan')}</Text>
+                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.chyavan, i18n.locale) || '-'}</Text>
+                                                </View>
                                             </View>
-                                            <View style={styles.detailRow}>
-                                                <Text style={styles.detailLabel}>{i18n.t('kalyanak.kevalGyan')}</Text>
-                                                <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.kevalgyn, i18n.locale) || '-'}</Text>
-                                            </View>
-                                            <View style={styles.detailRow}>
-                                                <Text style={styles.detailLabel}>{i18n.t('kalyanak.diksha')}</Text>
-                                                <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.diksha, i18n.locale) || '-'}</Text>
-                                            </View>
-                                            <View style={styles.detailRow}>
-                                                <Text style={styles.detailLabel}>{i18n.t('kalyanak.janma')}</Text>
-                                                <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.janma, i18n.locale) || '-'}</Text>
-                                            </View>
-                                            <View style={styles.detailRow}>
-                                                <Text style={styles.detailLabel}>{i18n.t('kalyanak.chyavan')}</Text>
-                                                <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.chyavan, i18n.locale) || '-'}</Text>
-                                            </View>
-                                        </View>
-                                    </>
-                                )}
-                                <TouchableOpacity
-                                    style={styles.closeButton}
-                                    onPress={() => setModalVisible(false)}
-                                >
-                                    <Icon name="close" size={30} color="#fff" />
-                                </TouchableOpacity>
+                                        </>
+                                    )}
+                                    <TouchableOpacity
+                                        style={styles.closeButton}
+                                        onPress={() => setModalVisible(false)}
+                                    >
+                                        <Icon name="close" size={30} color="#fff" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
-                    </TouchableWithoutFeedback>
-                </Modal>
-            </View>
+                        </TouchableWithoutFeedback>
+                    </Modal>
+                </View>}
         </SafeAreaView>
     );
 };
