@@ -16,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
 import { getTableCount } from '../database/database';
 import { convertDateMonthsOnly, convertDigitsOnly, convertJainDateNumber, formatJainDate, formatMonthYear } from '../utils/numberConverter';
+import { getFrontCalendar } from '../component/global';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const JainCalendarScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
@@ -29,66 +31,63 @@ const JainCalendarScreen = ({ navigation }) => {
     useEffect(() => {
         let lang = i18n.locale;
         setLanguage(lang);
-
-        const check = async () => {
-            try {
-                const n = await getTableCount('tblEvents');
-                console.log('tblEvents count =', Number(n));
-            } catch (e) {
-                console.error('Count error:', e);
-            }
-        };
-        check();
+        loadMonthData(currentMonth);
     }, []);
 
-    // Initialize database and load data
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                await initDatabase();
-                setImporting(true);
-                await importAllData();
-                await loadMonthData();
-            } catch (error) {
-                console.error('Error loading data:', error);
-            } finally {
-                setLoading(false);
-                setImporting(false);
-            }
-        };
-        loadData();
-    }, []);
 
-    const loadMonthData = async () => {
+
+    const loadMonthData = async (date) => {
         try {
-            const fmt = (d) => {
-                const y = d.getFullYear();
-                const m = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${y}-${m}-${day}`;
+            setLoading(true);
+
+            // Get selected city data from AsyncStorage
+            const selectedCityStr = await AsyncStorage.getItem('selectedCity');
+            const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
+                lat: '22.2726554',
+                long: '73.1969701',
+                country_code: 'IN'
             };
-            const startDate = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
-            const endDate = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0));
 
-            const data = await getCalendarData(startDate, endDate);
-            console.log('data =', data);
-            setCalendarData(data);
+            // Get current year and month
+            const year = date.getFullYear().toString();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
 
-            const todayStr = fmt(new Date());
-            const todayInMonth = (data || []).some(d => d.gregorian_date === todayStr);
-            const firstOfMonth = data && data.length > 0 ? data[0].gregorian_date : null;
-            const fallback = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
-            const defaultDate = todayInMonth ? todayStr : (firstOfMonth || fallback);
-            setSelectedDate(defaultDate);
-            await loadEvents(defaultDate);
+            // Fetch calendar data from API
+            const response = await getFrontCalendar(
+                'multiple',
+                year,
+                month,
+                month, // month_in_gujarati - using same as month for now
+                'gregorian',
+                selectedCity.lat.toString(),
+                selectedCity.long.toString(),
+                selectedCity.country_code || 'IN',
+                '2082' // vikram_samvat - hardcoded for now
+            );
+
+            if (response && response.data) {
+                setCalendarData(response.data);
+
+                // Set today's date as selected if available in the response
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                const todayInMonth = response.data.some(d => d.dateString === todayStr);
+
+                if (todayInMonth) {
+                    setSelectedDate(todayStr);
+                    await loadEvents(todayStr);
+                }
+            }
         } catch (error) {
             console.error('Error loading month data:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         if (!loading) {
-            loadMonthData();
+            loadMonthData(currentMonth);
         }
     }, [currentMonth]);
 
@@ -96,18 +95,22 @@ const JainCalendarScreen = ({ navigation }) => {
         const prev = new Date(currentMonth);
         prev.setMonth(currentMonth.getMonth() - 1);
         setCurrentMonth(prev);
+        loadMonthData(prev);
     };
 
     const handleNextMonth = () => {
         const next = new Date(currentMonth);
         next.setMonth(currentMonth.getMonth() + 1);
         setCurrentMonth(next);
+        loadMonthData(next);
     };
 
     const loadEvents = async (date) => {
         try {
-            const eventsData = await getEventsForDate(date);
-            setEvents(eventsData);
+            // For now, we'll keep the local database events
+            // You can modify this to use events from the API response if needed
+            const events = await getEventsForDate(date);
+            setEvents(events || []);
         } catch (error) {
             console.error('Error loading events:', error);
         }
@@ -128,7 +131,7 @@ const JainCalendarScreen = ({ navigation }) => {
 
     const calendarGridData = useMemo(() => {
         if (!calendarData || calendarData.length === 0) return [];
-        const first = new Date(calendarData[0].gregorian_date);
+        const first = new Date(calendarData[0].dateString);
         const leading = first.getDay();
         const leadingBlanks = Array.from({ length: leading }, (_, i) => ({ id: `p-${i}`, placeholder: true }));
 
@@ -148,10 +151,8 @@ const JainCalendarScreen = ({ navigation }) => {
         if (item.placeholder) {
             return <View style={styles.calendarCell} />;
         }
-
-        const isSelected = selectedDate === item.gregorian_date;
-        const isTodayDate = isToday(item.gregorian_date);
-        const hasEvents = events.some(e => e.gregorian_date === item.gregorian_date);
+        const isSelected = selectedDate === item.dateString;
+        const isTodayDate = isToday(item.dateString);
 
         return (
             <TouchableOpacity
@@ -160,7 +161,7 @@ const JainCalendarScreen = ({ navigation }) => {
                     isSelected && styles.selectedCell,
                     isTodayDate && styles.todayCell
                 ]}
-                onPress={() => handleDateSelect(item.gregorian_date)}
+                onPress={() => handleDateSelect(item.dateString)}
                 activeOpacity={0.7}
             >
                 <Text style={[
@@ -168,54 +169,31 @@ const JainCalendarScreen = ({ navigation }) => {
                     isSelected && styles.selectedDateText,
                     isTodayDate && !isSelected && styles.todayText
                 ]}>
-                    {language == "en" ? convertDigitsOnly(new Date(item.gregorian_date).getDate(), i18n.locale) : convertJainDateNumber(item.jain_date, i18n.locale)}
+                    {convertJainDateNumber(item.tithi, i18n.locale)}
                 </Text>
                 <Text style={[
                     styles.jainDateSmall,
                     isSelected && styles.selectedJainText
                 ]}>
-                    {i18n.t(`date.month.${(item.jain_month).toLowerCase()}`)}
+                    {language == "en" ? item.guj_month_english_name : language == "gu" ? item.guj_month_gujarati_name : item.guj_month_hindi_name}
                     {` (`}
-                    {i18n.t(`date.${(item.jain_paksha).toLowerCase()}`)}
+                    {i18n.t(`date.${(item.paksha_type)?.toLowerCase()}`)}
                     {`)`}
                 </Text>
                 <Text style={[
                     styles.jainDateSmall,
                     isSelected && styles.selectedJainText
                 ]}>
-                    {language == "gu" || language == "hi" ? convertDateMonthsOnly(new Date(item.gregorian_date), i18n.locale) : convertJainDateNumber(item.jain_date, i18n.locale)}
+                    {/* {language == "gu" || language == "hi" ? convertDateMonthsOnly(new Date(item.gregorian_date), i18n.locale) : convertJainDateNumber(item.jain_date, i18n.locale)} */}
+                    {convertJainDateNumber(item.day, i18n.locale)}/{convertJainDateNumber(item.month, i18n.locale)}
 
                 </Text>
-                {/* {hasEvents && (
-                    <View style={[
-                        styles.eventDot,
-                        isSelected && styles.eventDotSelected
-                    ]} />
-                )} */}
+
             </TouchableOpacity>
         );
     };
 
-    const renderEventItem = ({ item }) => (
-        <View style={styles.eventCard}>
-            <View style={styles.eventIconContainer}>
-                <Text style={styles.eventIcon}>📅</Text>
-            </View>
-            <View style={styles.eventContent}>
-                <Text style={styles.eventTitle}>
-                    {item.type === 'kalyanak'
-                        ? `${item.tirthankar_name} - ${item.event_name}`
-                        : item.type === 'kshay'
-                            ? `Kshay: ${item.jain_date}`
-                            : (item.description || 'Event')
-                    }
-                </Text>
-                {item.description && (
-                    <Text style={styles.eventDescription}>{item.description}</Text>
-                )}
-            </View>
-        </View>
-    );
+
 
     if (loading || importing) {
         return (
