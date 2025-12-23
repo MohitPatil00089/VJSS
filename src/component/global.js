@@ -191,6 +191,29 @@ export const getThemeSettings = async () => {
     }
 };
 
+export const getAllTapAaradhana = async () => {
+    try {
+        const response = await fetch(
+            `${baseUrl}gettapaaradhna`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        const result = await response.json();
+        if (result && result.data) {
+            return result.data;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error fetching tap aaradhana:', error);
+        return [];
+    }
+};
+
 export const getfaq = async () => {
     try {
         const response = await fetch(

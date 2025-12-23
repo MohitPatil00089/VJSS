@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, StatusBar, TouchableOpacity, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useLanguage } from './TapAaradhanaScreen';
 import i18n from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function TapAradhnaDetailScreen({ route, navigation }) {
     const { tapName, tapDetail, pachkkhan } = route.params || {};
-    const language = useLanguage();
+    const [language, setLanguage] = useState(i18n.locale);
     const CONTENT = {
         navkarshi: {
             gujarati: 'ઉગ્ગએ સૂરે, નમુક્કાર-સહિઅં, મુટ્ઠિસહિઅં, પચ્ચક્ખાઇ (પચ્ચક્ખામિ); ચઉવ્વિહં પિ આહારં, અસણં, પાણં, ખાઇમં, સાઇમં, અન્નત્થણાભોગેણં, સહસાગારેણં, મહત્તરાગારેણં,સવ્વસમાહિ-વત્તિયાગારેણં વોસિરઈ (વોસિરામિ).',
@@ -119,22 +118,32 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
         ? pachkkhan.map((title, idx) => ({ id: String(idx + 1), title }))
         : [];
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.itemContainer}
-            onPress={() => {
-                navigation.navigate('PachhakkhanDetail', {
-                    pachhakkhanId: item.title,
-                    title: i18n.t(`pachakkhanOptions.${item.title}`),
-                    content: CONTENT[item?.title] || { gujarati: '', hindi: '', english: '', detail: '', audio: '' }
-                });
-                console.log('Selected:', item.title);
-            }}
-        >
-            <Text style={styles.itemTitle}>{i18n.t(`pachakkhanOptions.${item.title}`)}</Text>
-            <Icon name="chevron-right" size={24} color="#666" />
-        </TouchableOpacity>
-    );
+    const renderItem = ({ item }) => {
+
+        return (
+            <TouchableOpacity
+                style={styles.itemContainer}
+                onPress={() => {
+                    // console.log(item)
+                    const title = language == "gu" ? item?.title?.name_gujarati : language == "hi" ? item?.title?.name_hindi : item?.title?.name_english
+                    navigation.navigate('PachhakkhanDetail', {
+                        title: title,
+                        content: {
+                            gujarati: item.title.details_gujarati,
+                            hindi: item.title.details_hindi,
+                            english: item.title.details_english,
+                            detail: item.title.details_detail,
+                            audio: item.title.pachakhan_audio
+                        }
+                    });
+                    console.log('Selected:', item.title);
+                }}
+            >
+                <Text style={styles.itemTitle}>{language == "gu" ? item?.title?.name_gujarati : language == "hi" ? item?.title?.name_hindi : item?.title?.name_english}</Text>
+                <Icon name="chevron-right" size={24} color="#666" />
+            </TouchableOpacity>
+        )
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -148,12 +157,7 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                         <Icon name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>
-                        {i18n.t(
-                            `tapAaradhana.${(tapName || '')
-                                .trim()
-                                .toLowerCase()
-                                .replace(/\s+(\w)/g, (_, c) => c.toUpperCase())}`
-                        )}
+                        {tapName}
 
                     </Text>
                     <View style={styles.headerRight} />

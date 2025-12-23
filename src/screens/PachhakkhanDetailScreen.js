@@ -10,7 +10,7 @@ const { width } = Dimensions.get('window');
 const PachhakkhanDetailScreen = ({ navigation }) => {
 
     const route = useRoute();
-    const { pachhakkhanId, title, content } = route.params;
+    const { title, content } = route.params;
     const [activeTab, setActiveTab] = useState('gujarati');
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
