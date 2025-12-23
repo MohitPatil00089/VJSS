@@ -170,3 +170,43 @@ export const getFrontPanchakhan = async () => {
         console.error('API Error:', error);
     }
 };
+
+export const getThemeSettings = async () => {
+    try {
+        const response = await fetch(
+            `${baseUrl}findthemesettingswithoutauth/NxOpZowo9GmjKqdR`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('API Error:', error);
+        return null;
+    }
+};
+
+export const getfaq = async () => {
+    try {
+        const response = await fetch(
+            `${baseUrl}get-faq-list`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('API Error:', error);
+        return null;
+    }
+};

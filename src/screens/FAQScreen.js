@@ -1,121 +1,241 @@
-import React from 'react';
-import { View, Text, StyleSheet, StatusBar, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  TouchableOpacity,
+  ScrollView,
+  Linking,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  ActivityIndicator,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
+import { getfaq } from '../component/global';
 
-const FAQScreen = ({ navigation }) => {
-    const language = i18n.locale;
-    console.log(language);
-    const faqContent = {
-        en: {
-            q1: "Q: For which locations is this application available?",
-            a1: `Adelaide
-Ahmedabad
-Brisbane
-Canberra
-Darwin
-Hobart
-Melbourne
-Mumbai
-Perth
-Surat
-Sydney`,
-            q2: "Q: Which mobile platforms are compatible with this app?",
-            a2: `We have both iPhone and Android apps.
-You can search for VJSS on the App Store or Play Store.`,
-            q3: "Q: How can I contact VJSS or send feedback?",
-            a3: "Drop us an email at vjss_app@vitraagjainsangh.org",
-        },
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-        hi: {
-            q1: "प्र: यह एप्लिकेशन किन स्थानों के लिए उपलब्ध है?",
-            a1: `एडिलेड
-अहमदाबाद
-ब्रिस्बेन
-कैनबरा
-डार्विन
-होबार्ट
-मेलबर्न
-मुंबई
-पर्थ
-सूरत
-सिडनी`,
-            q2: "प्र: यह ऐप किन मोबाइल प्लेटफॉर्म पर उपलब्ध है?",
-            a2: `यह ऐप iPhone और Android दोनों के लिए उपलब्ध है।
-आप App Store या Play Store पर VJSS खोज सकते हैं।`,
-            q3: "प्र: VJSS से संपर्क या फीडबैक कैसे भेजें?",
-            a3: "हमें vjss_app@vitraagjainsangh.org पर ईमेल करें",
-        },
+const AccordionItem = ({ question, answer, isOpen, onPress }) => {
+  const isEmail = answer?.includes('@');
 
-        gu: {
-            q1: "પ્ર: આ એપ્લિકેશન કયા સ્થળો માટે ઉપલબ્ધ છે?",
-            a1: `એડિલેડ
-અમદાવાદ
-બ્રિસ્બેન
-કેનબેરા
-ડાર્વિન
-હોબાર્ટ
-મેલબોર્ન
-મુંબઈ
-પર્થ
-સુરત
-સિડની`,
-            q2: "પ્ર: આ એપ કયા મોબાઇલ પ્લેટફોર્મ પર ઉપલબ્ધ છે?",
-            a2: `આ એપ iPhone અને Android બંને માટે ઉપલબ્ધ છે.
-App Store અથવા Play Store પર VJSS શોધો.`,
-            q3: "પ્ર: VJSS નો સંપર્ક અથવા પ્રતિસાદ કેવી રીતે આપવો?",
-            a3: "vjss_app@vitraagjainsangh.org પર અમને ઇમેઇલ કરો",
-        },
-    };
+  return (
+    <View style={[styles.card, isOpen && styles.activeCard]}>
+      <TouchableOpacity
+        style={styles.questionHeader}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.iconCircle}>
+          <Icon name="help-outline" size={18} color="#9E1B17" />
+        </View>
 
-    const content = faqContent[language] || faqContent.en;
+        <Text style={styles.questionText}>{question}</Text>
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#9E1B17" />
+        <Icon
+          name={isOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+          size={24}
+          color="#999"
+        />
+      </TouchableOpacity>
 
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color="#fff" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{i18n.t('faq')}</Text>
-                <View style={styles.headerRight} />
-            </View>
+      {isOpen && (
+        <View style={styles.answerContainer}>
+          <View style={styles.divider} />
 
-            <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-                <Text style={styles.q}>{content.q1}</Text>
-                <Text style={styles.a}>{content.a1}</Text>
+          <View style={styles.answerRow}>
+            {/* <Icon name="chat-bubble-outline" size={18} color="#666" style={styles.answerIcon} /> */}
 
-                <Text style={styles.q}>{content.q2}</Text>
-                <Text style={styles.a}>{content.a2}</Text>
-
-                <Text style={styles.q}>{content.q3}</Text>
-                <Text style={styles.a}>{content.a3}</Text>
-            </ScrollView>
-        </SafeAreaView>
-    );
+            {/* {isEmail ? (
+              <TouchableOpacity onPress={() => Linking.openURL(`mailto:${answer}`)}>
+                <Text style={[styles.answerText, styles.linkText]}>{answer}</Text>
+              </TouchableOpacity>
+            ) : ( */}
+              <Text style={styles.answerText}>{answer}</Text>
+            {/* )} */}
+          </View>
+        </View>
+      )}
+    </View>
+  );
 };
 
+const FAQScreen = ({ navigation }) => {
+  const language = i18n.locale; // en | hi | gu
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedIndex, setExpandedIndex] = useState(null);
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#9E1B17',
-        paddingVertical: 15,
-        paddingHorizontal: 10,
-        elevation: 3,
-    },
-    backButton: { padding: 5 },
-    headerTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
-    headerRight: { width: 40 },
-    content: { flex: 1 },
-    contentContainer: { padding: 16 },
-    q: { fontSize: 16, fontWeight: 'bold', color: '#222', marginTop: 12 },
-    a: { fontSize: 14, color: '#444', marginTop: 6, lineHeight: 22 },
-});
+  useEffect(() => {
+  (async () => {
+    try {
+      const res = await getfaq();
+      if (res?.data && res.data.length > 0) {
+        setList(res.data);
+        setExpandedIndex(0);
+      }
+    } catch (e) {
+      console.log('FAQ API error', e);
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, []);
+
+
+  const qKey = `${language}_question`;
+  const aKey = `${language}_answer`;
+
+  const toggleExpand = (index) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedIndex(expandedIndex === index ? null : index);
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#9E1B17" />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#9E1B17" />
+
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>{i18n.t('faq')}</Text>
+
+        <View style={{ width: 24 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {list.map((item, index) => (
+          <AccordionItem
+            key={item.id || index}
+            question={item[qKey] || item.en_question}
+            answer={item[aKey] || item.en_answer}
+            isOpen={expandedIndex === index}
+            onPress={() => toggleExpand(index)}
+          />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
 
 export default FAQScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F5F7FA' },
+
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#9E1B17',
+    paddingVertical: 15,
+    paddingHorizontal: 12,
+    elevation: 4,
+  },
+
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+
+  contentContainer: {
+    padding: 16,
+  },
+
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#EDF0F3',
+    overflow: 'hidden',
+  },
+
+  activeCard: {
+    borderColor: '#9E1B17',
+    elevation: 4,
+    shadowColor: '#9E1B17',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+
+  questionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FCECEC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+
+  questionText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1C1E',
+  },
+
+  answerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginBottom: 16,
+  },
+
+  answerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  answerIcon: {
+    marginTop: 2,
+    marginRight: 12,
+  },
+
+  answerText: {
+    fontSize: 14,
+    color: '#4F5E71',
+    lineHeight: 22,
+    flex: 1,
+  },
+
+  linkText: {
+    color: '#9E1B17',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+});

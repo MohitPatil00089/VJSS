@@ -16,6 +16,7 @@ import {
     Linking,
     Share,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Svg, { Circle, Path, G, Text as SvgText } from 'react-native-svg';
@@ -26,7 +27,7 @@ import { getCurrentTimings } from '../../utils/timingCalculator';
 import { getCalendarData, initDatabase } from '../../database/database';
 import moment from 'moment-timezone';
 import importAllData from '../../database/importData';
-import { getAllLocations, getFrontDashboardData, getDashboardData } from '../../component/global';
+import { getAllLocations, getFrontDashboardData, getDashboardData, getThemeSettings } from '../../component/global';
 
 const { width } = Dimensions.get('window');
 const CHART_SIZE = width * 0.95; // Increased size to take more screen width
@@ -536,6 +537,15 @@ const Home = ({ route, navigation }) => {
 
     // Timing data and choghadiya data are now managed by state
 
+    const [themeSettings, setThemeSettings] = useState(null);
+
+    useEffect(() => {
+        const fetchTheme = async () => {
+            const res = await getThemeSettings();
+            setThemeSettings(res?.data || null);
+        };
+        fetchTheme();
+    }, []);
 
     const menuItems = [
         {
@@ -549,7 +559,15 @@ const Home = ({ route, navigation }) => {
         { id: '4', title: i18n.t('menu.tapAaradhana'), onPress: () => navigation.navigate('TapAaradhana') },
         { id: '5', title: i18n.t('menu.kalyanak'), onPress: () => navigation.navigate('Kalyanak') },
         { id: '6', title: i18n.t('menu.tirthankars'), onPress: () => navigation.navigate('Tirthankars') },
-        { id: '7', title: i18n.t('menu.ourWebsite'), onPress: () => Linking.openURL('https://vitraagjainsangh.org') },
+        { id: '7', title: i18n.t('menu.ourWebsite'), onPress: () => {
+                const url = themeSettings?.our_website;
+                if (url) {
+                    Linking.openURL(url);
+                } else {
+                    Alert.alert('No Site', 'Website link is not available.');
+                }
+            } 
+        },
     ];
 
     return (
