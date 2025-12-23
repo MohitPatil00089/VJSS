@@ -233,3 +233,52 @@ export const getfaq = async () => {
         return null;
     }
 };
+
+export const getUserSettings = async (device_token) => {
+    console.log('Fetching user settings...', `${baseUrl}getusersettingsbyusertoken`, device_token);
+    try {
+        const response = await fetch(
+            `${baseUrl}getusersettingsbyusertoken`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    device_token: device_token,
+
+                }),
+            }
+        );
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('API Error:', error);
+    }
+};
+export const updateUserSettings = async (tithi_reminder, panch_kalyanak, tithi_notification_time, kalyanak_notification_time, device_token) => {
+    try {
+        const response = await fetch(
+            `${baseUrl}updateusersettingsbytoken`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tithi_reminder: tithi_reminder ? "yes" : "no",
+                    panch_kalyanak: panch_kalyanak ? "yes" : "no",
+                    tithi_notification_time: tithi_notification_time,
+                    kalyanak_notification_time: kalyanak_notification_time,
+                    device_token: device_token,
+                }),
+            }
+        );
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('API Error:', error);
+    }
+};

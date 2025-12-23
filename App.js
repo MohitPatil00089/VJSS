@@ -4,7 +4,19 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useIconLoader } from './src/utils/IconLoader';
 
-// Import screens
+import {
+    StatusBar,
+    Alert,
+    Platform,
+    PermissionsAndroid,
+    AppState,
+} from 'react-native';
+
+import notifee, { AndroidImportance } from '@notifee/react-native';
+import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Screens
 import CitySelectionScreen from './src/screens/CitySelectionScreen';
 import Home from './src/screens/Home/Home';
 import JainCalendarScreen from './src/screens/JainCalendarScreen';
@@ -17,9 +29,27 @@ import KalyanakScreen from './src/screens/KalyanakScreen';
 import TirthankarsScreen from './src/screens/TirthankarsScreen';
 import FAQScreen from './src/screens/FAQScreen';
 import AboutScreen from './src/screens/AboutScreen';
-import { StatusBar } from 'react-native';
+import NotificationScreen from './src/screens/NotificationScreen';
 
-// Load icons on app start
+/* ================================
+   🔔 BACKGROUND NOTIFICATION HANDLER
+   ================================ */
+messaging().setBackgroundMessageHandler(async remoteMessage => {
+    console.log('Background message:', remoteMessage);
+
+    await notifee.displayNotification({
+        title: remoteMessage?.notification?.title ?? 'Notification',
+        body: remoteMessage?.notification?.body ?? 'You have a new message.',
+        android: {
+            channelId: 'default',
+            importance: AndroidImportance.HIGH,
+        },
+    });
+});
+
+/* ================================
+   🔹 ICON LOADER
+   ================================ */
 const IconLoader = () => {
     useIconLoader();
     return null;
@@ -27,7 +57,96 @@ const IconLoader = () => {
 
 const Stack = createNativeStackNavigator();
 
+const handleAppStateChange = state => {
+    console.log('App state:', state);
+};
+
 const App = () => {
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener(
+            'change',
+            handleAppStateChange
+        );
+
+        const initialize = async () => {
+            /* 🔐 Android 13+ permission */
+            if (Platform.OS === 'android') {
+                await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+                );
+            }
+
+            /* 🔔 Create notification channel */
+            await notifee.createChannel({
+                id: 'default',
+                name: 'Default Channel',
+                importance: AndroidImportance.HIGH,
+            });
+
+            /* 🔑 Firebase permission */
+            await messaging().requestPermission();
+
+            /* 📱 FCM Token */
+            const token = await messaging().getToken();
+            await AsyncStorage.setItem('deviceToken', token);
+            console.log('FCM Token:', token);
+
+            /* 🔔 FOREGROUND NOTIFICATION */
+            const unsubscribe = messaging().onMessage(async remoteMessage => {
+
+                const title =
+                    remoteMessage?.notification?.title ?? 'Notification';
+
+                const body =
+                    remoteMessage?.notification?.body ??
+                    'You have a new message.';
+
+                if (Platform.OS === 'android') {
+                    await notifee.displayNotification({
+                        title,
+                        body,
+                        android: {
+                            channelId: 'default',
+                            importance: AndroidImportance.HIGH,
+                        },
+                    });
+                } else {
+                    Alert.alert(title, body);
+                }
+            });
+
+            /* 🔁 Notification opened from background */
+            messaging().onNotificationOpenedApp(remoteMessage => {
+                console.log('Opened from background:', remoteMessage);
+            });
+
+            /* 🚀 Notification opened from quit state */
+            const initialNotification =
+                await messaging().getInitialNotification();
+
+            if (initialNotification) {
+                console.log(
+                    'Opened from quit:',
+                    initialNotification.notification
+                );
+            }
+
+            return unsubscribe;
+        };
+
+        let unsubscribeFn;
+
+        initialize().then(fn => {
+            unsubscribeFn = fn;
+        });
+
+        return () => {
+            subscription.remove();
+            if (unsubscribeFn) unsubscribeFn();
+        };
+    }, []);
+
     return (
         <SafeAreaProvider>
             <StatusBar barStyle="light-content" backgroundColor="#9E1B17" />
@@ -40,80 +159,23 @@ const App = () => {
                         animation: 'slide_from_right',
                     }}
                 >
-                    <Stack.Screen
-                        name="SplashScreen"
-                        component={SplashScreen}
-                    />
-                    <Stack.Screen
-                        name="CitySelection"
-                        component={CitySelectionScreen}
-                    />
+                    <Stack.Screen name="SplashScreen" component={SplashScreen} />
+                    <Stack.Screen name="CitySelection" component={CitySelectionScreen} />
                     <Stack.Screen
                         name="Home"
                         component={Home}
-                        options={{
-                            gestureEnabled: false, // Disable back gesture for Home screen
-                        }}
+                        options={{ gestureEnabled: false }}
                     />
-                    <Stack.Screen
-                        name="JainCalendar"
-                        component={JainCalendarScreen}
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen
-                        name="Pachhakkhan"
-                        component={PachhakkhanScreen}
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen
-                        name="PachhakkhanDetail"
-                        component={PachhakkhanDetailScreen}
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen
-                        name="TapAaradhana"
-                        component={TapAaradhanaScreen}
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen
-                        name="TapAradhnaDetail"
-                        component={TapAradhnaDetailScreen}
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen
-                        name="Kalyanak"
-                        component={KalyanakScreen}
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen
-                        name="Tirthankars"
-                        component={TirthankarsScreen}
-                        options={{
-                            headerShown: false,
-                        }}
-                    />
-                    <Stack.Screen
-                        name="FAQ"
-                        component={FAQScreen}
-                        options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name="About"
-                        component={AboutScreen}
-                        options={{ headerShown: false }}
-                    />
+                    <Stack.Screen name="JainCalendar" component={JainCalendarScreen} />
+                    <Stack.Screen name="Pachhakkhan" component={PachhakkhanScreen} />
+                    <Stack.Screen name="PachhakkhanDetail" component={PachhakkhanDetailScreen} />
+                    <Stack.Screen name="TapAaradhana" component={TapAaradhanaScreen} />
+                    <Stack.Screen name="TapAradhnaDetail" component={TapAradhnaDetailScreen} />
+                    <Stack.Screen name="Kalyanak" component={KalyanakScreen} />
+                    <Stack.Screen name="Tirthankars" component={TirthankarsScreen} />
+                    <Stack.Screen name="Notification" component={NotificationScreen} />
+                    <Stack.Screen name="FAQ" component={FAQScreen} />
+                    <Stack.Screen name="About" component={AboutScreen} />
                 </Stack.Navigator>
             </NavigationContainer>
         </SafeAreaProvider>

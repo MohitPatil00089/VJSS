@@ -42,7 +42,7 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                 return;
             }
             console.log('Audio loaded successfully');
-            setDuration(soundRef.current.getDuration());
+            setDuration(soundRef?.current?.getDuration());
         });
 
         // Clean up on unmount

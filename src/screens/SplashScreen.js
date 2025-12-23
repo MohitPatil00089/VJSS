@@ -18,6 +18,7 @@ const SplashScreen = ({ navigation }) => {
     const onAgree = async () => {
       try {
         const savedCity = await AsyncStorage.getItem('selectedCityData');
+        console.log('savedCity', savedCity);
         if (savedCity) {
           navigation.replace('Home', { city: savedCity?.city });
         } else {

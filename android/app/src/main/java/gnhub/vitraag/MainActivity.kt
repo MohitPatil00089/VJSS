@@ -1,4 +1,4 @@
-package com.vjss
+package gnhub.vitraag
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

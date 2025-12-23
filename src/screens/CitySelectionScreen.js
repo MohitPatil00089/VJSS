@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -49,6 +49,13 @@ const CitySelectionScreen = ({ navigation }) => {
   const handleCitySelect = async (city) => {
     try {
       await AsyncStorage.setItem('selectedCity', JSON.stringify({
+        name: city.name,
+        lat: city.lat,
+        long: city.long,
+        country_code: city.country_code,
+        timezone: city.timezone
+      }));
+      await AsyncStorage.setItem('selectedCityData', JSON.stringify({
         name: city.name,
         lat: city.lat,
         long: city.long,

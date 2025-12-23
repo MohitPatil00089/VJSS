@@ -559,14 +559,15 @@ const Home = ({ route, navigation }) => {
         { id: '4', title: i18n.t('menu.tapAaradhana'), onPress: () => navigation.navigate('TapAaradhana') },
         { id: '5', title: i18n.t('menu.kalyanak'), onPress: () => navigation.navigate('Kalyanak') },
         { id: '6', title: i18n.t('menu.tirthankars'), onPress: () => navigation.navigate('Tirthankars') },
-        { id: '7', title: i18n.t('menu.ourWebsite'), onPress: () => {
+        {
+            id: '7', title: i18n.t('menu.ourWebsite'), onPress: () => {
                 const url = themeSettings?.our_website;
                 if (url) {
                     Linking.openURL(url);
                 } else {
                     Alert.alert('No Site', 'Website link is not available.');
                 }
-            } 
+            }
         },
     ];
 
@@ -615,6 +616,9 @@ const Home = ({ route, navigation }) => {
                         </View>
 
                         <View style={styles.scrollContainer}>
+                            <TouchableOpacity style={styles.bellIcon} onPress={() => navigation.navigate('Notification')}>
+                                <Icon name="notifications" size={24} color="white" />
+                            </TouchableOpacity>
                             <ScrollView
                                 style={styles.scrollView}
                                 contentContainerStyle={[styles.content, styles.scrollContent]}
@@ -1201,6 +1205,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 12,
         textTransform: 'uppercase'
+    },
+    bellIcon: {
+        position: 'absolute',
+        top: 15,
+        right: 30,
+        zIndex: 100,
     }
 });
 

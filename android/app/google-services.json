@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1012845705298",
+    "project_id": "vjss-19e3d",
+    "storage_bucket": "vjss-19e3d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012845705298:android:768ac043b7c37ecc6d078b",
+        "android_client_info": {
+          "package_name": "gnhub.vitraag"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwjwnmN_d2taCwmZxjcJifn3oTLvLvjSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

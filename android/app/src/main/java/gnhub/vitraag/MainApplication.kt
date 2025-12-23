@@ -1,4 +1,4 @@
-package com.vjss
+package gnhub.vitraag
 
 import android.app.Application
 import com.facebook.react.PackageList
