@@ -4,18 +4,22 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import i18n, { getCurrentLanguage } from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAllTapAaradhana } from '../component/global';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
 
 
 const TapAaradhanaScreen = ({ navigation }) => {
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+    // const [currentLanguage, setCurrentLanguage] = useState(i18n.locale);
     const [tapAaradhanaData, setTapAaradhanaData] = useState([]);
     const [language, setLanguage] = useState(i18n.locale);
 
     useEffect(() => {
+        setLanguage(i18n.locale);
         getAllTapAaradhana().then(data => {
             console.log('Tap Aaradhana Data:', data);
             setTapAaradhanaData(data);
         });
-    }, []);
+    }, [i18n.locale]);
 
     // Tap Aaradhana data (from user-provided list)
     // const tapAaradhanaData = [
@@ -232,7 +236,9 @@ const TapAaradhanaScreen = ({ navigation }) => {
                 <Text style={styles.headerTitle}>
                     {language === 'gu' ? 'તપ / આરાધના' : language === 'hi' ? 'तप /आराधना' : 'Tap / Aaradhana'}
                 </Text>
-                <View style={styles.headerRight} />
+                <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                    <Icon name="language" size={24} color="#fff" />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.content}>
@@ -244,6 +250,11 @@ const TapAaradhanaScreen = ({ navigation }) => {
                     showsVerticalScrollIndicator={false}
                 />
             </View>
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={language}
+            />
         </SafeAreaView>
     );
 };

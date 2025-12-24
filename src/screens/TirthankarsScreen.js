@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { convertDigitsOnly, formatJainDate } from '../utils/numberConverter';
 import i18n from '../i18n/i18n';
 import { getFrontPanchKalyanaks } from '../component/global';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
 
 const TirthankarsScreen = ({ navigation, route }) => {
 
@@ -216,6 +217,9 @@ const TirthankarsScreen = ({ navigation, route }) => {
         }
     };
 
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+    const [currentLanguage, setCurrentLanguage] = useState(i18n.locale);
+
     const [tirthankars, setTirthankars] = useState([]);
     const [selectedImage, setSelectedImage] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -225,7 +229,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
 
     // Get all tirthankar images
     useEffect(() => {
-
+        setLanguage(i18n.locale); 
         const loadTirthankars = async () => {
             // try {
             //     const tirthankarList = [
@@ -273,7 +277,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
         };
 
         loadTirthankars();
-    }, []);
+    }, [i18n.locale]);
 
     const renderItem = ({ item, index }) => {
         // const translatedName = tirthankarDetails[item.id].name;
@@ -313,7 +317,9 @@ const TirthankarsScreen = ({ navigation, route }) => {
                             <Icon name="arrow-back" size={24} color="#fff" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Tirthankars</Text>
-                        <View style={styles.headerRight} />
+                        <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                            <Icon name="language" size={24} color="#fff" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Tirthankars Grid */}
@@ -381,6 +387,11 @@ const TirthankarsScreen = ({ navigation, route }) => {
                         </TouchableWithoutFeedback>
                     </Modal>
                 </View>}
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={currentLanguage}
+            />
         </SafeAreaView>
     );
 };

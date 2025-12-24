@@ -5,10 +5,15 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Sound from 'react-native-sound';
 import Slider from '@react-native-community/slider';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import i18n from '../i18n/i18n';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
+
 const { width } = Dimensions.get('window');
 
 const PachhakkhanDetailScreen = ({ navigation }) => {
 
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+    const [language, setLanguage] = useState(i18n.locale);
     const route = useRoute();
     const { title, content } = route.params;
     const [activeTab, setActiveTab] = useState('gujarati');
@@ -20,6 +25,7 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
     const intervalRef = useRef(null);
     console.log("content", content)
     useEffect(() => {
+        setLanguage(i18n.locale);
         if (!content?.audio) {
             console.log('No audio URL provided');
             return;
@@ -56,7 +62,7 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                 clearInterval(intervalRef.current);
             }
         };
-    }, [content?.audio]);
+    }, [i18n.locale]);
 
 
     // Handle play/pause
@@ -167,7 +173,9 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                     <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
                         {title}
                     </Text>
-                    <View style={styles.headerRight} />
+                    <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                                        <Icon name="language" size={24} color="#fff" />
+                                    </TouchableOpacity>
                 </View>
 
                 {/* Audio Player */}
@@ -246,6 +254,11 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                     </View> */}
                 </ScrollView>
             </View>
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={language}
+            />
         </SafeAreaView>
     );
 };

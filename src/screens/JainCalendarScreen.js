@@ -16,8 +16,11 @@ import i18n from '../i18n/i18n';
 import { convertDateMonthsOnly, convertDigitsOnly, convertJainDateNumber, formatJainDate, formatMonthYear } from '../utils/numberConverter';
 import { getFrontCalendar } from '../component/global';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
 
 const JainCalendarScreen = ({ navigation }) => {
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+    // const [currentLanguage, setCurrentLanguage] = useState(i18n.locale);
     const [loading, setLoading] = useState(true);
     const [calendarData, setCalendarData] = useState([]);
     const [selectedDate, setSelectedDate] = useState(null);
@@ -216,7 +219,9 @@ const JainCalendarScreen = ({ navigation }) => {
                     <Icon name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{i18n.t('tabs.jain_calendar')}</Text>
-                <View style={styles.headerRight} />
+                <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                    <Icon name="language" size={24} color="#fff" />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.header}>
@@ -288,6 +293,11 @@ const JainCalendarScreen = ({ navigation }) => {
                     )}
                 </ScrollView>
             </View> */}
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={language}
+            />
         </SafeAreaView>
     );
 };

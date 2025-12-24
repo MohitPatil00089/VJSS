@@ -4,13 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import i18n from '../i18n/i18n';
 import { getFrontPanchakhan } from '../component/global';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
 
 const PachhakkhanScreen = ({ navigation }) => {
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
     const [loading, setLoading] = useState(false);
     const [panchakhan, setPanchakhan] = useState([]);
     const [language, setLanguage] = useState(i18n.locale);
     useEffect(() => {
-
+        setLanguage(i18n.locale);
         const loadPanchakhan = async () => {
             try {
                 setLoading(true);
@@ -26,7 +28,7 @@ const PachhakkhanScreen = ({ navigation }) => {
         };
 
         loadPanchakhan();
-    }, []);
+    }, [i18n.locale]);
 
     const handlePachhakkhanPress = (item) => {
         // Navigate to the detail screen with the selected item ID
@@ -65,7 +67,9 @@ const PachhakkhanScreen = ({ navigation }) => {
                             <Icon name="arrow-back" size={24} color="#fff" />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>{i18n.t('tabs.pachakkhan')}</Text>
-                        <View style={styles.headerRight} />
+                        <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                            <Icon name="language" size={24} color="#fff" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Pachhakkhan List */}
@@ -87,6 +91,11 @@ const PachhakkhanScreen = ({ navigation }) => {
                     </ScrollView>
                 </View>
             )}
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={language}
+            />
         </SafeAreaView>
     );
 };

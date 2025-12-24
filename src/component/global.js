@@ -217,7 +217,7 @@ export const getAllTapAaradhana = async () => {
 export const getfaq = async () => {
     try {
         const response = await fetch(
-            `${baseUrl}get-faq-list`,
+            `${baseUrl}get-front-faq-list`,
             {
                 method: 'GET',
                 headers: {

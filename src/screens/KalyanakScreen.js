@@ -8,8 +8,10 @@ import database, { getKalyanakEvents } from '../database/database'; // We'll cre
 import { convertNumber, formatJainDate } from '../utils/numberConverter';
 import { getFrontPanchKalyanaks } from '../component/global';
 import { useRoute } from '@react-navigation/native';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
+
 export const useLanguage = () => {
-    const [language, setLanguage] = useState(getCurrentLanguage());
+    // const [language, setLanguage] = useState(getCurrentLanguage());
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -26,15 +28,20 @@ export const useLanguage = () => {
 };
 
 const KalyanakScreen = () => {
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+        const [language, setLanguage] = useState(i18n.locale);
+
     const navigation = useNavigation();
     const route = useRoute();
-    const language = useLanguage();
+    // const language = useLanguage();
     const t = (key) => i18n.t(key, { lng: language });
     const [kalyanakData, setKalyanakData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedDate, setSelectedDate] = useState(route.params?.selectedDate || new Date().toISOString().split('T')[0]);
+
     useEffect(() => {
+    setLanguage(i18n.locale);
         const fetchKalyanakEvents = async () => {
             try {
                 setLoading(true);
@@ -51,7 +58,7 @@ const KalyanakScreen = () => {
         };
 
         fetchKalyanakEvents();
-    }, []);
+    }, [i18n.locale]);
     const getMonthFromJainDate = (jainDate) => {
         if (!jainDate || typeof jainDate !== 'string') return 'Other';
         const parts = jainDate.trim().split(/\s+/);
@@ -144,7 +151,9 @@ const KalyanakScreen = () => {
                         <Icon name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('menu.kalyanak')}</Text>
-                    <View style={styles.languageButton} />
+                    <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                        <Icon name="language" size={24} color="#fff" />
+                    </TouchableOpacity>
                 </View>
 
                 <FlatList
@@ -159,6 +168,11 @@ const KalyanakScreen = () => {
                     }
                 />
             </View>
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={language}
+            />
         </SafeAreaView>
     );
 };

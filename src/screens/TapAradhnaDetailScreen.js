@@ -1,12 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, StatusBar, TouchableOpacity, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import i18n from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
 
 export default function TapAradhnaDetailScreen({ route, navigation }) {
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
     const { tapName, tapDetail, pachkkhan } = route.params || {};
     const [language, setLanguage] = useState(i18n.locale);
+    useEffect(() => {
+        setLanguage(i18n.locale);
+    }, [i18n.locale]);
+
+    const translatedTitle = useMemo(() => {
+        const raw = route.params?.tapData;
+        if (!raw) return route.params?.tapName || '';
+        return language === 'gu' ? raw.name_gujarati
+            : language === 'hi' ? raw.name_hindi
+                : raw.name_english;
+    }, [language, route.params?.tapData]);
+
+    const translatedDetail = useMemo(() => {
+        const raw = route.params?.tapData;
+        if (!raw) return route.params?.tapDetail || '';
+        return language === 'gu' ? raw.details_gujarati
+            : language === 'hi' ? raw.details_hindi
+                : raw.details_english;
+    }, [language, route.params?.tapData]);
+
     const CONTENT = {
         navkarshi: {
             gujarati: 'ઉગ્ગએ સૂરે, નમુક્કાર-સહિઅં, મુટ્ઠિસહિઅં, પચ્ચક્ખાઇ (પચ્ચક્ખામિ); ચઉવ્વિહં પિ આહારં, અસણં, પાણં, ખાઇમં, સાઇમં, અન્નત્થણાભોગેણં, સહસાગારેણં, મહત્તરાગારેણં,સવ્વસમાહિ-વત્તિયાગારેણં વોસિરઈ (વોસિરામિ).',
@@ -160,7 +182,9 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                         {tapName}
 
                     </Text>
-                    <View style={styles.headerRight} />
+                    <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                        <Icon name="language" size={24} color="#fff" />
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.content}>
@@ -181,6 +205,11 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                     />
                 </View>
             </View>
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={language}
+            />
         </SafeAreaView>
     );
 }

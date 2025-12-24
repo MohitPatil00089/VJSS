@@ -4,8 +4,11 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
 import { getThemeSettings } from '../component/global';
+import LanguageSelectorModal from '../component/LanguageSelectorModal';
 
 const AboutScreen = ({ navigation }) => {
+    const [showLanguageModal, setShowLanguageModal] = useState(false);
+    const [currentLanguage, setCurrentLanguage] = useState(i18n.locale);
     const [aboutContent, setAboutContent] = useState('');
     const [loading, setLoading] = useState(true);
 
@@ -38,7 +41,9 @@ const AboutScreen = ({ navigation }) => {
                         <Icon name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{i18n.t('about')}</Text>
-                    <View style={styles.headerRight} />
+                    <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                        <Icon name="language" size={24} color="#fff" />
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.loadingContainer}>
                     <Text>Loading...</Text>
@@ -56,12 +61,19 @@ const AboutScreen = ({ navigation }) => {
                     <Icon name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{i18n.t('about')}</Text>
-                <View style={styles.headerRight} />
+                <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
+                    <Icon name="language" size={24} color="#fff" />
+                </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
                 <Text style={styles.text}>{aboutContent}</Text>
             </ScrollView>
+            <LanguageSelectorModal
+                visible={showLanguageModal}
+                onClose={() => setShowLanguageModal(false)}
+                currentLang={currentLanguage}
+            />
         </SafeAreaView>
     );
 };
