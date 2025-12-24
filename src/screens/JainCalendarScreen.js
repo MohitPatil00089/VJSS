@@ -9,12 +9,10 @@ import {
     ActivityIndicator,
     ScrollView
 } from 'react-native';
-import { initDatabase, getCalendarData, getEventsForDate } from '../database/database';
-import importAllData from '../database/importData';
+import { getCalendarData, getEventsForDate } from '../database/database';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
-import { getTableCount } from '../database/database';
 import { convertDateMonthsOnly, convertDigitsOnly, convertJainDateNumber, formatJainDate, formatMonthYear } from '../utils/numberConverter';
 import { getFrontCalendar } from '../component/global';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -75,7 +73,7 @@ const JainCalendarScreen = ({ navigation }) => {
 
                 if (todayInMonth) {
                     setSelectedDate(todayStr);
-                    await loadEvents(todayStr);
+                    // await loadEvents(todayStr);
                 }
             }
         } catch (error) {
@@ -129,7 +127,7 @@ const JainCalendarScreen = ({ navigation }) => {
         navigation.navigate('Home', {
             selectedDate: yyyyMmDd // Pass as ISO string
         });
-        await loadEvents(date);
+        // await loadEvents(date);
     };
 
     const calendarGridData = useMemo(() => {
