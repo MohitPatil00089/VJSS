@@ -312,7 +312,7 @@ const Home = ({ route, navigation }) => {
 
             if (response && response.data) {
                 await setGlobalData(response.data);
-                getDashboardDataWithTiming(selectedDate);
+                await getDashboardDataWithTiming(selectedDate);
             }
         } catch (error) {
             console.error('Error loading month data:', error);
@@ -390,8 +390,10 @@ const Home = ({ route, navigation }) => {
 
                 // Safely handle timing data
                 if (response?.timedata?.data) {
-                    const timingArray = processTimingData(response.timedata.data, language);
-                    setTimingData(timingArray);
+                    console.log("response.timedata.data", response.timedata.data);
+                    const timingArray = await processTimingData(response.timedata.data, i18n.locale);
+                    console.log("timingArray", timingArray);
+                    await setTimingData(timingArray);
 
                     // Safely set sun times with fallbacks
                     const englishTimings = response.timedata.data.english || {};
@@ -512,7 +514,7 @@ const Home = ({ route, navigation }) => {
 
             // Update the app state to reflect the language change
             setCurrentLanguage(language);
-
+            await getGlobalData(selectedDate);
             // Close the language selection modal
             setShowLanguageModal(false);
 

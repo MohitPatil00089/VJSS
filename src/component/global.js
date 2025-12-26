@@ -146,7 +146,24 @@ export const getFrontPanchKalyanaks = async (today_date) => {
         console.error('API Error:', error);
     }
 };
+export const getFrontThirthankar = async () => {
+    try {
+        const response = await fetch(
+            `${baseUrl}getfrontthirthankar`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
 
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('API Error:', error);
+    }
+};
 
 export const getFrontPanchakhan = async () => {
     try {

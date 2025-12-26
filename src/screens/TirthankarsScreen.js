@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { convertDigitsOnly, formatJainDate } from '../utils/numberConverter';
 import i18n from '../i18n/i18n';
-import { getFrontPanchKalyanaks } from '../component/global';
+import { getFrontPanchKalyanaks, getFrontThirthankar } from '../component/global';
 import LanguageSelectorModal from '../component/LanguageSelectorModal';
 
 const TirthankarsScreen = ({ navigation, route }) => {
@@ -229,7 +229,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
 
     // Get all tirthankar images
     useEffect(() => {
-        setLanguage(i18n.locale); 
+        setLanguage(i18n.locale);
         const loadTirthankars = async () => {
             // try {
             //     const tirthankarList = [
@@ -264,7 +264,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
             // }
             try {
                 setLoading(true);
-                const events = await getFrontPanchKalyanaks(selectedDate);
+                const events = await getFrontThirthankar();
                 console.log("Tirthankar events:", events)
                 setTirthankars(events.data);
 
@@ -292,7 +292,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
                 <Text style={styles.index}>{convertDigitsOnly(index + 1, i18n.locale)}</Text>
                 <Image source={{ uri: item?.tirthankar_image }} style={styles.image} resizeMode="contain" />
                 <Text style={styles.name} numberOfLines={2} ellipsizeMode="tail">
-                    {language === 'gu' ? item?.tirthankar_name_gujarati : language === 'hi' ? item?.tirthankar_name_hindi : item?.tirthankar_name}
+                    {language === 'gu' ? item?.name_gujarati : language === 'hi' ? item?.name_hindi : item?.name_english}
                 </Text>
             </TouchableOpacity>
         );
@@ -345,7 +345,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
                                     {selectedImage && (
                                         <>
                                             <Text style={styles.detailTitle}>
-                                                {language === 'gu' ? selectedImage?.tirthankar_name_gujarati : language === 'hi' ? selectedImage?.tirthankar_name_hindi : selectedImage?.tirthankar_name}
+                                                {language === 'gu' ? selectedImage?.name_gujarati : language === 'hi' ? selectedImage?.name_hindi : selectedImage?.name_english}
                                             </Text>
                                             <Image
                                                 source={{ uri: selectedImage?.tirthankar_image }}
@@ -353,26 +353,26 @@ const TirthankarsScreen = ({ navigation, route }) => {
                                                 resizeMode="contain"
                                             />
                                             <View style={styles.detailsList}>
-                                                <View style={styles.detailRow}>
-                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.moksha')}</Text>
-                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.moksha, i18n.locale) || '-'}</Text>
-                                                </View>
-                                                <View style={styles.detailRow}>
-                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.kevalGyan')}</Text>
-                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.kevalgyn, i18n.locale) || '-'}</Text>
-                                                </View>
-                                                <View style={styles.detailRow}>
-                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.diksha')}</Text>
-                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.diksha, i18n.locale) || '-'}</Text>
-                                                </View>
-                                                <View style={styles.detailRow}>
-                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.janma')}</Text>
-                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.janma, i18n.locale) || '-'}</Text>
-                                                </View>
-                                                <View style={styles.detailRow}>
-                                                    <Text style={styles.detailLabel}>{i18n.t('kalyanak.chyavan')}</Text>
-                                                    <Text style={styles.detailValue}>{formatJainDate(tirthankarDetails[selectedImage.id]?.chyavan, i18n.locale) || '-'}</Text>
-                                                </View>
+                                                {selectedImage?.panchkalyanak_details?.map((item, index) => {
+                                                    console.log("item", item)
+                                                    return (
+                                                        item.redirect_date ?
+                                                            <TouchableOpacity style={styles.detailRow} key={index} onPress={() => navigation.navigate('Home', {
+                                                                selectedDate: item.redirect_date
+                                                            })}>
+                                                                <Text style={styles.detailLabel}>{language == "gu" ? item.kalynak_name_gujarati : language == "hi" ? item.kalynak_name_hindi : item.kalynak_name}</Text>
+                                                                <View style={{ flexDirection: 'row' }}>
+                                                                    <Text style={styles.detailValue}>{language == "gu" ? item.tithi_name_gujarati : language == "hi" ? item.tithi_name_hindi : item.tithi_name}</Text>
+                                                                    <Icon name="arrow-right" size={24} color="#9E1B17" />
+                                                                </View>
+                                                            </TouchableOpacity> :
+                                                            <View style={styles.detailRow} key={index}>
+                                                                <Text style={styles.detailLabel}>{language == "gu" ? item.kalynak_name_gujarati : language == "hi" ? item.kalynak_name_hindi : item.kalynak_name}</Text>
+                                                                <Text style={styles.detailValue}>{language == "gu" ? item.tithi_name_gujarati : language == "hi" ? item.tithi_name_hindi : item.tithi_name}</Text>
+                                                            </View>
+                                                    )
+                                                })}
+
                                             </View>
                                         </>
                                     )}
