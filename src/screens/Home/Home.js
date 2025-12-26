@@ -657,18 +657,22 @@ const Home = ({ route, navigation }) => {
             : getActiveChoghadiyaIndex(choghadiyaData.night);
 
     const handlePachhakkhanPress = async (item) => {
-        console.log("item", item);
-
         const events = await getFrontPanchakhan();
-        console.log("events", events)
         const matchedObjectFromEvent = events.data.find((event) => {
-            if (i18n.locale === "gu") {
-                return event.name_gujarati.includes(item.name);
-            } else if (i18n.locale === "en") {
-                console.log("event.name_english", event.name_english, item.name)
-                return event.name_english.includes(item.name.toLowerCase());
-            } else {
-                return event.name_hindi.includes(item.name);
+            if (item?.name == "Navkarshi" || item?.name == "नवकारशी" || item?.name == "નવકારશી") {
+                console.log("Navkarshi matched", event);
+                return event.id == "NxOpZowo9GmjKqdR";
+            } else if (item?.name == "Porisi" || item?.name == "पोरिसी" || item?.name == "પોરિસિં") {
+                return event.id == "XbPW7awNkzl83LD6";
+            } else if (item?.name == "Saddha Porisi" || item?.name == "साड्ढ-पोरिसिं" || item?.name == "સાડ્ઢપોરિસિં") {
+                return event.id == "XbPW7awNkzl83LD6";
+            } else if (item?.name == "Purimaddha" || item?.name == "पुरिमड्ढ" || item?.name == "પુરિમડ્ઢ") {
+                return event.id == "aYOxlpzRMwrX3gD7";
+            } else if (item?.name == "Avaddha" || item?.name == "अवड्ढ" || item?.name == "અવધ") {
+                return event.id == "aYOxlpzRMwrX3gD7";
+            }
+            else {
+                return null
             }
         });
 
