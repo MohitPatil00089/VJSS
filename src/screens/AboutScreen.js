@@ -13,19 +13,27 @@ const AboutScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setCurrentLanguage(i18n.locale);
+    }, [i18n.locale]);
+
+    useEffect(() => {
         fetchAboutContent();
-    }, []);
+    }, [i18n.locale]);
+
+    const pickAbout = (res) => {
+        const lang = i18n.locale;
+        if (lang === 'gu') return res.data.gu_about_us;
+        if (lang === 'hi') return res.data.hi_about_us;
+        return res.data.about_us;          // en
+    };
 
     const fetchAboutContent = async () => {
         try {
-            const response = await getThemeSettings();
-            if (response?.data?.about_us) {
-                setAboutContent(response.data.about_us);
-            } else {
-                setAboutContent('No data found');
-            }
-        } catch (error) {
-            console.error('Error fetching about content:', error);
+            setLoading(true);
+            const res = await getThemeSettings();
+            setAboutContent(pickAbout(res) || 'No data found');
+        } catch (e) {
+            console.error(e);
             setAboutContent('No data found');
         } finally {
             setLoading(false);
