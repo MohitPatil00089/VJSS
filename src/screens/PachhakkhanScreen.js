@@ -33,7 +33,7 @@ const PachhakkhanScreen = ({ navigation }) => {
     const handlePachhakkhanPress = (item) => {
         // Navigate to the detail screen with the selected item ID
 
-        const content = language == "en" ? item.name_english : language == "gu" ? item.name_gujarati : item.name_hindi;
+        const content = i18n.locale == "en" ? item.name_english : i18n.locale == "gu" ? item.name_gujarati : item.name_hindi;
 
 
         navigation.navigate('PachhakkhanDetail', {

@@ -62,13 +62,26 @@ const NotificationScreen = ({ navigation }) => {
         try {
             const response = await getUserSettings(fcmToken);
             console.log('User Settings:', response);
-            if (response && response.data) {
+            if (response.message == "Data Found") {
+                console.log("User settings found");
                 setTithisEnabled(response.data.tithi_reminder == "yes" ? true : false);
                 setKalyanakEnabled(response.data.panch_kalyanak == "yes" ? true : false);
                 setTithisHours(response.data.tithi_notification_time);
                 setKalyanakHours(response.data.kalyanak_notification_time);
                 setLoading(false);
+            } else if (response.message == "Data Not Found") {
+                console.log("No user settings found");
+                setTithisEnabled(false);
+                setKalyanakEnabled(false);
+                setTithisHours(1);
+                setKalyanakHours(1);
+                setLoading(false);
             } else {
+                console.log("No user settings found");
+                setTithisEnabled(false);
+                setKalyanakEnabled(false);
+                setTithisHours(1);
+                setKalyanakHours(1);
                 setLoading(false);
             }
         } catch (error) {
@@ -80,8 +93,8 @@ const NotificationScreen = ({ navigation }) => {
         setLoading(true);
         const response = await updateUserSettings(tithisEnabled, kalyanakEnabled, tithisHours, kalyanakHours, fcmToken);
         console.log('User Settings:', response);
-        if (response.status == 200) {
-            Alert.alert('Success', 'User settings updated successfully.');
+        if (response.message == "Data Found") {
+            Alert.alert('Success', 'Notification settings updated successfully.');
             navigation.goBack();
         } else {
             setLoading(false);

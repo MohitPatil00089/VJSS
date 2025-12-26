@@ -29,7 +29,7 @@ export const useLanguage = () => {
 
 const KalyanakScreen = () => {
     const [showLanguageModal, setShowLanguageModal] = useState(false);
-        const [language, setLanguage] = useState(i18n.locale);
+    const [language, setLanguage] = useState(i18n.locale);
 
     const navigation = useNavigation();
     const route = useRoute();
@@ -41,7 +41,7 @@ const KalyanakScreen = () => {
     const [selectedDate, setSelectedDate] = useState(route.params?.selectedDate || new Date().toISOString().split('T')[0]);
 
     useEffect(() => {
-    setLanguage(i18n.locale);
+        setLanguage(i18n.locale);
         const fetchKalyanakEvents = async () => {
             try {
                 setLoading(true);
@@ -111,7 +111,7 @@ const KalyanakScreen = () => {
                 <View style={{ flex: 1 }}>
 
                     <Text style={styles.eventTitle}>
-                        {language == "gu" ? event?.tirthankar_name_gujarati : language == "hi" ? event?.hi_tirthankar_name : event?.tirthankar_name}
+                        {language == "gu" ? event?.tirthankar_name_gujarati : language == "hi" ? event?.tirthankar_name_hindi : event?.tirthankar_name}
                     </Text>
                     <Text style={styles.eventSubtitle}>
                         {language == "gu" ? event?.event_name_gujarati : language == "hi" ? event?.event_name_hindi : event?.event_name}

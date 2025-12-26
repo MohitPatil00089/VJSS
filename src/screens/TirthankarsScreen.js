@@ -266,7 +266,8 @@ const TirthankarsScreen = ({ navigation, route }) => {
                 setLoading(true);
                 const events = await getFrontThirthankar();
                 console.log("Tirthankar events:", events)
-                setTirthankars(events.data);
+                await setTirthankars(events.data);
+                setLoading(false);
 
             } catch (err) {
                 console.error("Error fetching tirthankar events:", err);
@@ -284,8 +285,9 @@ const TirthankarsScreen = ({ navigation, route }) => {
         return (
             <TouchableOpacity
                 style={styles.itemContainer}
-                onPress={() => {
-                    setSelectedImage(item);
+                onPress={async () => {
+                    await setSelectedImage(item);
+                    console.log("Selected Image:", item);
                     setModalVisible(true);
                 }}
             >
@@ -316,7 +318,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
                         >
                             <Icon name="arrow-back" size={24} color="#fff" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Tirthankars</Text>
+                        <Text style={styles.headerTitle}>{i18n.t('menu.tirthankars')}</Text>
                         <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
                             <Icon name="language" size={24} color="#fff" />
                         </TouchableOpacity>
@@ -400,6 +402,11 @@ const { width, height } = Dimensions.get('window');
 const itemSize = (width - 40) / 3;
 
 const styles = StyleSheet.create({
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',

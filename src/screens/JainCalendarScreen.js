@@ -179,7 +179,7 @@ const JainCalendarScreen = ({ navigation }) => {
                     styles.jainDateSmall,
                     isSelected && styles.selectedJainText
                 ]}>
-                    {language == "en" ? item.guj_month_english_name : language == "gu" ? item.guj_month_gujarati_name : item.guj_month_hindi_name}
+                    {i18n.locale == "en" ? item.guj_month_english_name : i18n.locale == "gu" ? item.guj_month_gujarati_name : item.guj_month_hindi_name}
                     {` (`}
                     {i18n.t(`date.${(item.paksha_type)?.toLowerCase()}`)}
                     {`)`}
