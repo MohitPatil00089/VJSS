@@ -817,7 +817,11 @@ const Home = ({ route, navigation }) => {
                                                 </View>
                                                 <View style={styles.column}>
                                                     {timingData.slice(3).map((item) => (
-                                                        <View key={item.id} style={styles.timingItem}>
+                                                        <TouchableOpacity key={item.id} style={styles.timingItem}
+                                                            onPress={() => {
+                                                                handlePachhakkhanPress(item)
+                                                            }}
+                                                        >
                                                             <View style={[
                                                                 styles.timingDot,
                                                                 {
@@ -832,7 +836,7 @@ const Home = ({ route, navigation }) => {
                                                                     {formatTime(item.time, i18n.locale)}
                                                                 </Text>
                                                             </View>
-                                                        </View>
+                                                        </TouchableOpacity>
                                                     ))}
                                                 </View>
                                             </View>
