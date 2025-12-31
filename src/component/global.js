@@ -94,8 +94,8 @@ export const getFrontDashboardData = async (day, year, month, latitude, longitud
 };
 
 
-export const getDashboardData = async (week_name, day, year, month, latitude, longitude) => {
-    // console.log('Fetching dashboard data...', `${baseUrl}getfrontchoghadiyaswithtimedata`, week_name, day, year, month, latitude, longitude);
+export const getDashboardData = async (week_name, day, year, month, latitude, longitude, country_code) => {
+    console.log('Fetching dashboard data...', `${baseUrl}getfrontchoghadiyaswithtimedata`, week_name, day, year, month, latitude, longitude, country_code);
     try {
         const response = await fetch(
             `${baseUrl}getfrontchoghadiyaswithtimedata`,
@@ -109,6 +109,7 @@ export const getDashboardData = async (week_name, day, year, month, latitude, lo
                     type: "All",
                     day: day,
                     year: year,
+                    country_code: country_code,
                     month: month,
                     latitude: latitude,
                     longitude: longitude,

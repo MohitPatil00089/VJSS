@@ -299,13 +299,18 @@ const Home = ({ route, navigation }) => {
                 long: '73.1969701',
                 country_code: 'IN'
             };
-            console.log("selectedCity", selectedCity);
+
 
             // Get current year and month
             const day = date.getDate();
             const year = date.getFullYear().toString();
             const month = String(date.getMonth() + 1).padStart(2, '0');
-
+            console.log("API JSON", day,
+                year,
+                month,
+                selectedCity.lat,
+                selectedCity.long,
+                selectedCity.country_code,);
             // Fetch calendar data from API
             const response = await getFrontDashboardData(
                 day,
@@ -315,7 +320,7 @@ const Home = ({ route, navigation }) => {
                 selectedCity.long,
                 selectedCity.country_code,
             );
-
+            console.log("API Response:", response);
             if (response && response.data) {
                 await setGlobalData(response.data);
                 await getDashboardDataWithTiming(selectedDate);
@@ -387,6 +392,7 @@ const Home = ({ route, navigation }) => {
                 month,
                 selectedCity.lat.toString(),
                 selectedCity.long.toString(),
+                selectedCity.country_code,
             );
 
             if (response?.data) {

@@ -158,13 +158,15 @@ const JainCalendarScreen = ({ navigation }) => {
         }
         const isSelected = selectedDate === item.dateString;
         const isTodayDate = isToday(item.dateString);
+        const isTithiHighlighted = item.tithi === '8' || item.tithi === '14' || (item.tithi === '5' && item.paksha_type?.toLowerCase() === 'sud');
 
         return (
             <TouchableOpacity
                 style={[
                     styles.calendarCell,
                     isSelected && styles.selectedCell,
-                    isTodayDate && styles.todayCell
+                    isTodayDate && styles.todayCell,
+                    isTithiHighlighted && styles.tithiHighlightedCell
                 ]}
                 onPress={() => handleDateSelect(item.dateString)}
                 activeOpacity={0.7}
@@ -172,13 +174,15 @@ const JainCalendarScreen = ({ navigation }) => {
                 <Text style={[
                     styles.gregorianDate,
                     isSelected && styles.selectedDateText,
-                    isTodayDate && !isSelected && styles.todayText
+                    isTodayDate && !isSelected && styles.todayText,
+                    isTithiHighlighted && styles.tithiHighlightedText
                 ]}>
                     {convertJainDateNumber(item.tithi, i18n.locale)}
                 </Text>
                 <Text style={[
                     styles.jainDateSmall,
-                    isSelected && styles.selectedJainText
+                    isSelected && styles.selectedJainText,
+                    isTithiHighlighted && styles.tithiHighlightedText
                 ]}>
                     {i18n.locale == "en" ? item.guj_month_english_name : i18n.locale == "gu" ? item.guj_month_gujarati_name : item.guj_month_hindi_name}
                     {` (`}
@@ -187,7 +191,8 @@ const JainCalendarScreen = ({ navigation }) => {
                 </Text>
                 <Text style={[
                     styles.jainDateSmall,
-                    isSelected && styles.selectedJainText
+                    isSelected && styles.selectedJainText,
+                    isTithiHighlighted && styles.tithiHighlightedText
                 ]}>
                     {/* {language == "gu" || language == "hi" ? convertDateMonthsOnly(new Date(item.gregorian_date), i18n.locale) : convertJainDateNumber(item.jain_date, i18n.locale)} */}
                     {convertJainDateNumber(item.day, i18n.locale)}/{convertJainDateNumber(item.month, i18n.locale)}
@@ -414,6 +419,10 @@ const styles = StyleSheet.create({
         borderColor: '#FF6B35',
         borderRadius: 12,
     },
+    tithiHighlightedCell: {
+        backgroundColor: '#48bf4cff',
+        borderRadius: 12,
+    },
     gregorianDate: {
         fontSize: 16,
         fontWeight: '600',
@@ -421,6 +430,9 @@ const styles = StyleSheet.create({
         marginBottom: 1,
     },
     selectedDateText: {
+        color: '#FFFFFF',
+    },
+    tithiHighlightedText: {
         color: '#FFFFFF',
     },
     todayText: {

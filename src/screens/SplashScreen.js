@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const SplashScreen = ({ navigation }) => {
 
   const slideAnim = useRef(new Animated.Value(80)).current;
+  const alertShownRef = useRef(false);
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -17,36 +18,41 @@ const SplashScreen = ({ navigation }) => {
 
     const onAgree = async () => {
       try {
-        const savedCity = await AsyncStorage.getItem('selectedCityData');
-        console.log('savedCity', savedCity);
+        const savedCityStr = await AsyncStorage.getItem('selectedCity');
+        const savedCity = savedCityStr ? JSON.parse(savedCityStr) : null;
         if (savedCity) {
           navigation.replace('Home', { city: savedCity?.city });
         } else {
-          navigateTimer = setTimeout(() => {
-            navigation.replace('CitySelection');
-          }, 2000);
+
+          navigation.replace('CitySelection');
+
         }
       } catch (e) {
-        navigateTimer = setTimeout(() => {
-          navigation.replace('CitySelection');
-        }, 2000);
+        navigation.replace('CitySelection');
       }
     };
 
     const disclaimerMessage =
       'The contents of this Application are very sacred as it contains Photos of Arihant Bhagwan and Religious Literature. So we request you to use respectfully and avoid Ashatana.\n\nAll calculations are generated based on Longitude and Latitude. There may be minor difference in Pachhakana timings.';
 
-    Alert.alert(
-      'Disclaimer',
-      disclaimerMessage,
-      [
-        { text: 'Agree', onPress: onAgree },
-      ],
-      { cancelable: false }
-    );
+    const showDisclaimer = () => {
+      if (alertShownRef.current) return;
+      alertShownRef.current = true;
+      Alert.alert(
+        'Disclaimer',
+        disclaimerMessage,
+        [
+          { text: 'Agree', onPress: onAgree },
+        ],
+        { cancelable: false }
+      );
+    };
+
+    const alertTimer = setTimeout(showDisclaimer, 300);
 
     return () => {
       if (navigateTimer) clearTimeout(navigateTimer);
+      clearTimeout(alertTimer);
     };
   }, []);
 
