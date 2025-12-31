@@ -209,9 +209,9 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                         contentContainerStyle={styles.listContent}
                         ListFooterComponent={
                             <View style={styles.detailCard}>
-                                <Text style={styles.detailTitle}>Detail</Text>
+                                <Text style={styles.detailTitle}>{i18n.t(`Detail`)}</Text>
                                 <Text style={styles.detailText}>
-                                    {tapDetail || ''}
+                                    {i18n.locale === 'gu' ? route.params?.tapData.details_gujarati : i18n.locale === 'hi' ? route.params?.tapData.details_hindi : route.params?.tapData.details}
                                 </Text>
                             </View>
                         }
