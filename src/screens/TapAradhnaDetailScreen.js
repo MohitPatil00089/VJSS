@@ -1,17 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, StatusBar, TouchableOpacity, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import i18n from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LanguageSelectorModal from '../component/LanguageSelectorModal';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 export default function TapAradhnaDetailScreen({ route, navigation }) {
     const [showLanguageModal, setShowLanguageModal] = useState(false);
-    const { tapName, tapDetail, pachkkhan } = route.params || {};
+    const { tapName, tapNameGujarati, tapNameHindi, tapNameEnglish, tapDetail, pachkkhan } = route.params || {};
     const [language, setLanguage] = useState(i18n.locale);
     useEffect(() => {
         setLanguage(i18n.locale);
     }, [i18n.locale]);
+
+    useFocusEffect(
+        useCallback(() => {
+            setLanguage(i18n.locale);
+            return undefined;
+        }, [])
+    );
 
     const translatedTitle = useMemo(() => {
         const raw = route.params?.tapData;
@@ -150,6 +160,9 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                     const title = language == "gu" ? item?.title?.name_gujarati : language == "hi" ? item?.title?.name_hindi : item?.title?.name_english
                     navigation.navigate('PachhakkhanDetail', {
                         title: title,
+                        titleHindi: item?.title?.name_hindi,
+                        titleEnglish: item?.title?.name_english,
+                        titleGujarati: item?.title?.name_gujarati,
                         content: {
                             gujarati: item.title.details_gujarati,
                             hindi: item.title.details_hindi,
@@ -179,11 +192,11 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                         <Icon name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>
-                        {tapName}
+                        {language == "gu" ? tapNameGujarati : language == "hi" ? tapNameHindi : tapNameEnglish}
 
                     </Text>
                     <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
-                        <Icon name="language" size={24} color="#fff" />
+                        <Ionicons name="language" size={24} color="#fff" />
                     </TouchableOpacity>
                 </View>
 

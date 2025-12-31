@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, StatusBar, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
 import { getThemeSettings } from '../component/global';
@@ -70,7 +71,7 @@ const AboutScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{i18n.t('about')}</Text>
                 <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
-                    <Icon name="language" size={24} color="#fff" />
+                    <Ionicons name="language" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
 

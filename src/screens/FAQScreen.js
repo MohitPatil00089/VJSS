@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
 import { getfaq } from '../component/global';
@@ -26,30 +27,30 @@ const AccordionItem = ({ question, answer, isOpen, onPress }) => {
   const isEmail = answer?.includes('@');
 
   return (
-  <View style={[styles.card, isOpen && styles.activeCard]}>
+    <View style={[styles.card, isOpen && styles.activeCard]}>
       <TouchableOpacity
         style={styles.questionHeader}
         onPress={onPress}
         activeOpacity={0.7}
       >
-      <View style={styles.iconCircle}>
-        <Icon name="help-outline" size={18} color="#9E1B17" />
-      </View>
+        <View style={styles.iconCircle}>
+          <Icon name="help-outline" size={18} color="#9E1B17" />
+        </View>
 
-      <Text style={styles.questionText}>{question}</Text>
+        <Text style={styles.questionText}>{question}</Text>
 
         <Icon
           name={isOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
           size={24}
           color="#999"
         />
-    </TouchableOpacity>
+      </TouchableOpacity>
 
-    {isOpen && (
-      <View style={styles.answerContainer}>
-        <View style={styles.divider} />
+      {isOpen && (
+        <View style={styles.answerContainer}>
+          <View style={styles.divider} />
 
-        <View style={styles.answerRow}>
+          <View style={styles.answerRow}>
             {/* <Icon name="chat-bubble-outline" size={18} color="#666" style={styles.answerIcon} /> */}
 
             {/* {isEmail ? (
@@ -57,13 +58,13 @@ const AccordionItem = ({ question, answer, isOpen, onPress }) => {
                 <Text style={[styles.answerText, styles.linkText]}>{answer}</Text>
               </TouchableOpacity>
             ) : ( */}
-          <Text style={styles.answerText}>{answer}</Text>
+            <Text style={styles.answerText}>{answer}</Text>
             {/* )} */}
+          </View>
         </View>
-      </View>
-    )}
-  </View>
-);
+      )}
+    </View>
+  );
 };
 
 const FAQScreen = ({ navigation }) => {
@@ -79,7 +80,7 @@ const FAQScreen = ({ navigation }) => {
     (async () => {
       try {
         const res = await getfaq();
-      if (res?.data && res.data.length > 0) {
+        if (res?.data && res.data.length > 0) {
           setList(res.data);
           setExpandedIndex(0);
         }
@@ -123,7 +124,7 @@ const FAQScreen = ({ navigation }) => {
           activeOpacity={0.7}
           style={styles.iconSpacing}
         >
-          <Icon name="language" size={24} color="white" />
+          <Ionicons name="language" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -151,8 +152,8 @@ const FAQScreen = ({ navigation }) => {
 export default FAQScreen;
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: '#F5F7FA',
   },
 
@@ -173,17 +174,17 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  headerTitle: { 
-    color: '#fff', 
-    fontSize: 18, 
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
 
-  iconSpacing: { 
+  iconSpacing: {
     marginLeft: 14,
   },
 
-  contentContainer: { 
+  contentContainer: {
     padding: 16,
   },
 
@@ -227,19 +228,19 @@ const styles = StyleSheet.create({
     color: '#1A1C1E',
   },
 
-  answerContainer: { 
-    paddingHorizontal: 16, 
+  answerContainer: {
+    paddingHorizontal: 16,
     paddingBottom: 20,
   },
 
-  divider: { 
-    height: 1, 
-    backgroundColor: '#F0F0F0', 
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
     marginBottom: 16,
   },
 
-  answerRow: { 
-    flexDirection: 'row', 
+  answerRow: {
+    flexDirection: 'row',
     alignItems: 'flex-start',
   },
 

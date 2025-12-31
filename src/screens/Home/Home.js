@@ -481,6 +481,7 @@ const Home = ({ route, navigation }) => {
                 if (cityData) {
                     const parsedCity = JSON.parse(cityData);
                     setSelectedCity(parsedCity);
+                    await getGlobalData(selectedDate);
                 }
             } catch (error) {
                 console.error('Error loading selected city:', error);
@@ -796,7 +797,7 @@ const Home = ({ route, navigation }) => {
                                         <>
                                             <View style={styles.timingsContainer}>
                                                 <View style={styles.column}>
-                                                    {timingData.slice(0, 3).map((item) => (
+                                                    {timingData.slice(1, 4).map((item) => (
                                                         <TouchableOpacity key={item.id} style={styles.timingItem}
                                                             onPress={() => {
                                                                 handlePachhakkhanPress(item)
@@ -820,7 +821,7 @@ const Home = ({ route, navigation }) => {
                                                     ))}
                                                 </View>
                                                 <View style={styles.column}>
-                                                    {timingData.slice(3).map((item) => (
+                                                    {timingData.slice(4, 7).map((item) => (
                                                         <TouchableOpacity key={item.id} style={styles.timingItem}
                                                             onPress={() => {
                                                                 handlePachhakkhanPress(item)
@@ -904,17 +905,16 @@ const Home = ({ route, navigation }) => {
                                             </Text>
                                         </View>
                                         {/* Menu Items */}
-                                        <TouchableOpacity
+                                        <View
                                             key={menuItems[0].id}
                                             style={styles.menuItem}
-                                            onPress={menuItems[0].onPress}
                                         >
                                             <View style={styles.menuItemContent}>
                                                 <Text style={styles.menuItemTitle}>{menuItems[0].title}</Text>
                                                 <Text style={styles.menuItemSubtitle}>{menuItems[0].subtitle}</Text>
                                             </View>
-                                            <Icon name="chevron-forward" size={20} color="#fff" />
-                                        </TouchableOpacity>
+                                            {/* <Icon name="chevron-forward" size={20} color="#fff" /> */}
+                                        </View>
                                         <View style={styles.menuContainer}>
                                             {menuItems.slice(1).map((item) => (
                                                 <TouchableOpacity
@@ -1047,6 +1047,7 @@ const Home = ({ route, navigation }) => {
                                                                 } catch (e) { }
                                                                 setSelectedCity(item);
                                                                 setShowCityModal(false);
+                                                                await getGlobalData(selectedDate);
                                                             }}
                                                         >
                                                             <Text style={styles.cityText}>{item.name}</Text>
@@ -1257,7 +1258,7 @@ const styles = StyleSheet.create({
         marginLeft: 2,
     },
     timingName: {
-        width: '45%',
+        width: '50%',
         color: 'white',
         fontSize: 13,
     },

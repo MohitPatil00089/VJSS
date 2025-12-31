@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import i18n, { getCurrentLanguage } from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -69,7 +70,7 @@ const KalyanakScreen = () => {
         const map = new Map();
         (kalyanakData || []).forEach(evt => {
 
-            const month = getMonthFromJainDate(language === 'gu' ? evt.guj_month_gujarati_name : language === 'hi' ? evt.hi_month_hindi_name : evt.guj_month_english_name);
+            const month = getMonthFromJainDate(language === 'gu' ? evt.guj_month_gujarati_name : language === 'hi' ? evt.guj_month_hindi_name : evt.guj_month_english_name);
             if (!map.has(month)) map.set(month, []);
             map.get(month).push(evt);
         });
@@ -152,7 +153,7 @@ const KalyanakScreen = () => {
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('menu.kalyanak')}</Text>
                     <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
-                        <Icon name="language" size={24} color="#fff" />
+                        <Ionicons name="language" size={24} color="#fff" />
                     </TouchableOpacity>
                 </View>
 

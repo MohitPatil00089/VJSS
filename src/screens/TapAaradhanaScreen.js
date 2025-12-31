@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import i18n, { getCurrentLanguage } from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAllTapAaradhana } from '../component/global';
 import LanguageSelectorModal from '../component/LanguageSelectorModal';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 
 const TapAaradhanaScreen = ({ navigation }) => {
@@ -14,195 +17,28 @@ const TapAaradhanaScreen = ({ navigation }) => {
     const [language, setLanguage] = useState(i18n.locale);
 
     useEffect(() => {
-        setLanguage(i18n.locale);
         getAllTapAaradhana().then(data => {
             console.log('Tap Aaradhana Data:', data);
             setTapAaradhanaData(data);
         });
-    }, [i18n.locale]);
+    }, [language]);
 
-    // Tap Aaradhana data (from user-provided list)
-    // const tapAaradhanaData = [
-    //     {
-    //         id: '1',
-    //         tapName: 'Ekasanu',
-    //         tapDetail:
-    //             'In Ekasanu, Eat only once in a day, Ekasanu needs to do while sitting at one place within less than 48 minutes. Other than that don’t eat or drink anything except boiled water. Boiled water can have up to sunset only. By doing Ekasanu, a person can shed karmas equivalent to 1 million years (10 Lac) of hell life – i.e. karma nirjara.',
-    //         pachkkhan: ['ekasanu', 'panhar'],
-    //         icon: 'restaurant',
-    //         color: '#4CAF50',
-    //         ekasanu: {
-    //             gujarati: 'ઉગ્ગએ સૂરે, નમુક્કાર-સહિઅં, પોરિસિં, મુટ્ઠિસહિઅં, પચ્ચક્ ખાઇ (પચ્ચક્ ખામિ); ... એગાસણં બિયાસણં ...',
-    //             hindi: 'उग्गए सूरे, नमुक्कार-सहिअं, पोरिसिं, मुट्ठिसहिअं, पच्चक्खाइ (पच्चक्खामि); ... एकासनं बियासनं ...',
-    //             english: 'Uggae Sure, Namukkaar-Sahiam, Porisim, Mutthisahim, Pachchakkhaai ... Ekaasanam, Biyaasanam ...',
-    //             detail: 'Ekasanu: Eat only once in a day within 48 minutes while sitting at one place; otherwise only boiled water till sunset. Biyasanu: Don’t eat or drink until Two Prahars after sunrise; then take food after Navkar 3 times.',
-    //             audio: '4. Ekasanu_Biyasanu Pachhakkhan_Audio'
-    //         },
-    //     },
-    //     {
-    //         id: '2',
-    //         tapName: 'Biyasanu',
-    //         tapDetail:
-    //             'In Biyasanu, don’t eat or drink anything until Two Prahars time after the sunrise, then sit at one place, fold your hand(Muththi vaalavi or handful), recite Navkar 3 times and then take food or water.',
-    //         pachkkhan: ['ekasanu', 'panhar'],
-    //         icon: 'restaurant-menu',
-    //         color: '#2196F3',
-    //         biyasanu: {
-    //             gujarati: 'બિયાસણં',
-    //             hindi: 'Biyasanam',
-    //             english: 'Biyasanu',
-    //             detail: 'Biyasanu: Don’t eat or drink anything until Two Prahars after sunrise; then take food after Navkar 3 times.',
-    //             audio: '5. Ekasanu_Biyasanu Pachhakkhan_Audio'
-    //         }
-    //     },
-    //     {
-    //         id: '3',
-    //         tapName: 'Ayambil',
-    //         tapDetail:
-    //             'In Ayambil, Eat only once in a day, don’t eat any Vigai-Fruits-Vegetables, and Ayambil needs to do while sitting at one place within less than 48 minutes. Other than that don’t eat or drink anything except boiled water. Boiled water can have up to sunset only. By doing Ayambil, a person can shed karmas equivalent to 100 billion years (1000 crore years) of hell life – i.e. karma nirjara.',
-    //         pachkkhan: ['ayambil', 'panhar'],
-    //         icon: 'spa',
-    //         color: '#9C27B0',
-    //         ayambil: {
-    //             gujarati: 'ઉગ્ગએ સૂરે, નમુક્કાર-સહિઅં, પોરિસિં, સાડ્ઢપોરિસિં, મુટ્ઠિસહિઅં, ... આયંબિલં પચ્ચક્ ખાઇ ...',
-    //             hindi: 'उग्गए सूरे, नमुक्कार-सहिअं, पोरिसिं, साड्ढपोरिसिं, ... आयंबिलं पच्चक् खाइ ...',
-    //             english: 'Uggae Sure, Namukkaar-Sahiam, Porisim, Saaddhaporisim, ... Aayambilam Pachchakkhaai ...',
-    //             detail: 'Ayambil: Eat once; no vigai/fruits/vegetables; finish within 48 minutes sitting at one place; only boiled water till sunset.',
-    //             audio: '5-AyambilPachhakkhan'
-    //         },
-    //     },
-    //     {
-    //         id: '4',
-    //         tapName: 'Tivihar Upvaas',
-    //         tapDetail:
-    //             "In Upvas, Don't eat or drink anything except boiled water. Boiled water can be drunk from Porsi to sunset Only. By doing Upvas, a person can shed karmas equivalent to 1000 billion years(10000 Crore years) of hell life – i.e. karma nirjara.",
-    //         pachkkhan: ['tiviharUpvaas', 'panhar'],
-    //         icon: 'brightness-3',
-    //         color: '#FF9800',
-    //         tiviharUpvaas: {
-    //             gujarati: 'સૂરે ઉગ્ગએ અબ્ભત્તટ્ઠં ...',
-    //             hindi: 'सूरे उग्गए अब्भत्तट्ठं ...',
-    //             english: 'Sure, Uggae, Abbhattattham ...',
-    //             detail: 'Tivihar Upvaas: Do not eat or drink anything except boiled water from Porsi to sunset only.',
-    //             audio: '6-TiviharUpvaasPachhakkhan'
-    //         },
-    //     },
-    //     {
-    //         id: '5',
-    //         tapName: 'Chovihar Upvaas',
-    //         tapDetail:
-    //             "In Chauvihar Upvas, Don't eat or drink anything. Dont drink even Boiled water too. By doing Upvas, a person can shed karmas equivalent to 1000 billion years(10000 Crore years) of hell life – i.e. karma nirjara.",
-    //         pachkkhan: ['choviharUpvaas', 'choviharUpvaasEvening'],
-    //         icon: 'brightness-4',
-    //         color: '#795548',
-    //         choviharUpvaas: {
-    //             gujarati: 'સૂરે ઉગ્ગએ અબ્ભત્તટ્ઠં ... ચઉવ્વિહં ...',
-    //             hindi: 'सूरे उग्गए अब्भत्तट्ठं ... चउव्विहं ...',
-    //             english: 'Sure, Uggae, Abbhattattham ... Chauviham ...',
-    //             detail: 'Chauvihar Upvaas: Don’t eat or drink anything at all; not even boiled water.',
-    //             audio: '7-ChoviharUpvaasPachhakkhan'
-    //         },
-    //     },
-    //     {
-    //         id: '6',
-    //         tapName: 'Chhath Pachhakkhan',
-    //         tapDetail: 'Coming Soon',
-    //         pachkkhan: ['chhath', 'panhar'],
-    //         icon: 'filter-6',
-    //         color: '#F44336',
-    //         chhath: {
-    //             gujarati: 'Coming Soon',
-    //             hindi: 'Coming Soon',
-    //             english: 'Coming Soon',
-    //             detail: 'By doing Chhath, a person can shed karmas equivalent to 10000 billion years (1 lakh crore years) of hell life – i.e. karma nirjara.',
-    //             audio: '8. Chhath_Audio'
-    //         },
-    //     },
-    //     {
-    //         id: '7',
-    //         tapName: 'Attham Pachhakkhan',
-    //         tapDetail: 'Coming Soon',
-    //         pachkkhan: ['attham', 'panhar'],
-    //         icon: 'filter-8',
-    //         color: '#3F51B5',
-    //         attham: {
-    //             gujarati: 'Coming Soon',
-    //             hindi: 'Coming Soon',
-    //             english: 'Coming Soon',
-    //             detail: 'By doing Attham, a person can shed karmas equivalent to 100000 billion years (10 lakh crore years) of hell life – i.e. karma nirjara.',
-    //             audio: '9. Attham_Audio'
-    //         },
-    //     },
-    //     {
-    //         id: '8',
-    //         tapName: 'Desavagasik Pachhakkhan',
-    //         tapDetail: 'Coming Soon',
-    //         pachkkhan: ['deshavagasik'],
-    //         icon: 'public',
-    //         color: '#009688',
-    //         deshavagasik: {
-    //             gujarati: 'Coming Soon',
-    //             hindi: 'Coming Soon',
-    //             english: 'Coming Soon',
-    //             detail: '',
-    //             audio: '14-DeshavagasikPachhakkhan'
-    //         },
-    //     },
-    //     {
-    //         id: '9',
-    //         tapName: 'Tivihar',
-    //         tapDetail:
-    //             'In Tivihar one does not take food of any kind including liquids except water after the sunset until the sunrise of next day but can take water.',
-    //         pachkkhan: ['tiviharUpvaas'],
-    //         icon: 'brightness-3',
-    //         color: '#673AB7',
-    //         tivihar: {
-    //             gujarati: 'દિવસચરિમં પચ્ચક્ ખાઇ ...',
-    //             hindi: 'दिवसचरिमं पच्चक् खाइ ...',
-    //             english: 'Divasacharimam, Pachchakkhaai ...',
-    //             detail: 'Tivihar: After sunset until sunrise, no food or liquids except water (water allowed).',
-    //             audio: '12-TiviharPachhakkhan'
-    //         },
-    //     },
-    //     {
-    //         id: '10',
-    //         tapName: 'Duvihaar',
-    //         tapDetail:
-    //             'In Duvihar one does not take food of any kind including liquids except water and medicine after the sunset until the sunrise of next day but can take water and medicine.',
-    //         pachkkhan: ['duvihaar'],
-    //         icon: 'brightness-2',
-    //         color: '#FF5722',
-    //         duvihaar: {
-    //             gujarati: 'દિવસચરિમં પચ્ચક્ ખાઇ ... દુવિહં ...',
-    //             hindi: 'दिवसचरिमं पच्चक् खाइ ... दुविहं ...',
-    //             english: 'Divasacharimam, Pachchakkhaai ... Duviham ...',
-    //             detail: 'Duvihar: After sunset until sunrise, no food/liquids except water and medicine (both allowed).',
-    //             audio: '13-DuvihaarPachhakkhan'
-    //         },
-    //     },
-    //     {
-    //         id: '11',
-    //         tapName: 'Chovihar',
-    //         tapDetail:
-    //             'In Chovihar, one does not take any food or any liquids after the sunset until the sunrise next day.',
-    //         pachkkhan: ['chovihar'],
-    //         icon: 'brightness-1',
-    //         color: '#E91E63',
-    //         chovihar: {
-    //             gujarati: 'દિવસચરિમં પચ્ચક્ ખાઇ ... ચઉવ્વિહં ...',
-    //             hindi: 'दिवसचरिमं पच्चक् खाइ ... चउव्विहं ...',
-    //             english: 'Divasacharimam, Pachchakkhaai ... Chauviham ...',
-    //             detail: 'Chovihar: No food or any liquids after sunset until sunrise next day.',
-    //             audio: '11-ChoviharUpvaasEveningPachhakkhan'
-    //         },
-    //     },
-    // ];
+    useFocusEffect(
+        useCallback(() => {
+            setLanguage(i18n.locale);
+            return undefined;
+        }, [])
+    );
 
     const handleItemPress = (item) => {
-        const tapName = language === 'gu' ? item.name_gujarati : language === 'hi' ? item.name_hindi : item.name;
-        const tapDetail = language === 'gu' ? item.details_gujarati : language === 'hi' ? item.details_hindi : item.details;
+        const tapName = i18n.locale === 'gu' ? item.name_gujarati : i18n.locale === 'hi' ? item.name_hindi : item.name;
+        const tapDetail = i18n.locale === 'gu' ? item.details_gujarati : i18n.locale === 'hi' ? item.details_hindi : item.details;
         navigation.navigate('TapAradhnaDetail', {
             tapName: tapName,
+            tapNameEnglish: item.name,
+            tapNameGujarati: item.name_gujarati,
+            tapNameHindi: item.name_hindi,
+
             tapDetail: tapDetail,
             pachkkhan: item.pachakhan_details,
             tapData: item // Pass the entire tap data object
@@ -215,7 +51,7 @@ const TapAaradhanaScreen = ({ navigation }) => {
             onPress={() => handleItemPress(item)}
         >
             <Text style={styles.title}>
-                {language === 'gu' ? item.name_gujarati : language === 'hi' ? item.name_hindi : item.name}
+                {i18n.locale === 'gu' ? item.name_gujarati : i18n.locale === 'hi' ? item.name_hindi : item.name}
             </Text>
 
 
@@ -234,10 +70,10 @@ const TapAaradhanaScreen = ({ navigation }) => {
                     <Icon name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>
-                    {language === 'gu' ? 'તપ / આરાધના' : language === 'hi' ? 'तप /आराधना' : 'Tap / Aaradhana'}
+                    {i18n.locale === 'gu' ? 'તપ / આરાધના' : i18n.locale === 'hi' ? 'तप /आराधना' : 'Tap / Aaradhana'}
                 </Text>
                 <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
-                    <Icon name="language" size={24} color="#fff" />
+                    <Ionicons name="language" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
 
@@ -253,7 +89,7 @@ const TapAaradhanaScreen = ({ navigation }) => {
             <LanguageSelectorModal
                 visible={showLanguageModal}
                 onClose={() => setShowLanguageModal(false)}
-                currentLang={language}
+                currentLang={i18n.locale}
             />
         </SafeAreaView>
     );

@@ -13,6 +13,7 @@ import {
     ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { convertDigitsOnly, formatJainDate } from '../utils/numberConverter';
 import i18n from '../i18n/i18n';
@@ -320,7 +321,7 @@ const TirthankarsScreen = ({ navigation, route }) => {
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>{i18n.t('menu.tirthankars')}</Text>
                         <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
-                            <Icon name="language" size={24} color="#fff" />
+                            <Ionicons name="language" size={24} color="#fff" />
                         </TouchableOpacity>
                     </View>
 

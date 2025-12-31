@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { getCalendarData, getEventsForDate } from '../database/database';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
 import { convertDateMonthsOnly, convertDigitsOnly, convertJainDateNumber, formatJainDate, formatMonthYear } from '../utils/numberConverter';
@@ -220,7 +221,7 @@ const JainCalendarScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{i18n.t('tabs.jain_calendar')}</Text>
                 <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
-                    <Icon name="language" size={24} color="#fff" />
+                    <Ionicons name="language" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
 

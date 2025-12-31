@@ -13,8 +13,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const LanguageSelectorModal = ({ visible, onClose, currentLang }) => {
   const setLanguage = async (lang) => {
     await AsyncStorage.setItem('userLanguage', lang);
-    changeLanguage(lang);        // updates i18n.locale
-    onClose();                   // close modal
+    await changeLanguage(lang);
+    onClose();
   };
 
   return (

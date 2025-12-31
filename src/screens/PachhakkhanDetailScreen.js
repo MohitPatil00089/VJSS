@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform, Alert, ToastAndroid } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import Sound from 'react-native-sound';
 import Slider from '@react-native-community/slider';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +17,7 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
     const [showLanguageModal, setShowLanguageModal] = useState(false);
     const [language, setLanguage] = useState(i18n.locale);
     const route = useRoute();
-    const { title, content } = route.params;
+    const { title, titleHindi, titleEnglish, titleGujarati, content } = route.params;
     const [activeTab, setActiveTab] = useState('gujarati');
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -171,11 +173,11 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                         <Icon name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
-                        {title}
+                        {i18n.locale === 'hi' ? titleHindi : i18n.locale === 'gu' ? titleGujarati : titleEnglish}
                     </Text>
                     <TouchableOpacity style={styles.headerRight} onPress={() => setShowLanguageModal(true)}>
-                                        <Icon name="language" size={24} color="#fff" />
-                                    </TouchableOpacity>
+                        <Ionicons name="language" size={24} color="#fff" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Audio Player */}

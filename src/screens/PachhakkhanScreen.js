@@ -5,6 +5,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import i18n from '../i18n/i18n';
 import { getFrontPanchakhan } from '../component/global';
 import LanguageSelectorModal from '../component/LanguageSelectorModal';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 const PachhakkhanScreen = ({ navigation }) => {
     const [showLanguageModal, setShowLanguageModal] = useState(false);
@@ -12,14 +14,12 @@ const PachhakkhanScreen = ({ navigation }) => {
     const [panchakhan, setPanchakhan] = useState([]);
     const [language, setLanguage] = useState(i18n.locale);
     useEffect(() => {
-        setLanguage(i18n.locale);
         const loadPanchakhan = async () => {
             try {
                 setLoading(true);
                 const events = await getFrontPanchakhan();
                 console.log("Panchakhan events:", events)
                 setPanchakhan(events.data);
-
             } catch (err) {
                 console.error("Error fetching panchakhan events:", err);
             } finally {
@@ -28,7 +28,14 @@ const PachhakkhanScreen = ({ navigation }) => {
         };
 
         loadPanchakhan();
-    }, [i18n.locale]);
+    }, [language]);
+
+    useFocusEffect(
+        useCallback(() => {
+            setLanguage(i18n.locale);
+            return undefined;
+        }, [])
+    );
 
     const handlePachhakkhanPress = (item) => {
         // Navigate to the detail screen with the selected item ID
@@ -39,6 +46,9 @@ const PachhakkhanScreen = ({ navigation }) => {
         navigation.navigate('PachhakkhanDetail', {
             pachhakkhanId: item.id,
             title: content,
+            titleHindi: item.name_hindi,
+            titleEnglish: item.name_english,
+            titleGujarati: item.name_gujarati,
             content: {
                 gujarati: item.pachakhan_details.details_gujarati,
                 hindi: item.pachakhan_details.details_hindi,
@@ -82,7 +92,7 @@ const PachhakkhanScreen = ({ navigation }) => {
                             >
                                 <View style={styles.menuItemContent}>
                                     <Text style={styles.menuItemTitle}>
-                                        {language == "en" ? item.name_english : language == "gu" ? item.name_gujarati : item.name_hindi}
+                                        {i18n.locale == "en" ? item.name_english : i18n.locale == "gu" ? item.name_gujarati : item.name_hindi}
                                     </Text>
                                 </View>
                                 <Icon name="chevron-forward" size={20} color="#666" />
