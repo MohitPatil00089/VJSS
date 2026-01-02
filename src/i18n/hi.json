@@ -13,6 +13,7 @@
   "about": "बारे में",
   "faq": "सामान्य प्रश्न",
   "tabs": {
+    "tithi": "महीने में तिथि",
     "jain_calendar": "जैन कैलेंडर",
     "pachakkhan": "पचक्खाण",
     "choghadiya": "चौघड़िया"
@@ -206,7 +207,7 @@
     "pachakkhan": "पचक्खाण",
     "tapAaradhana": "तप / आराधना",
     "kalyanak": "कल्याणक",
-    "tirthankars": "तीर्थंकर",
+    "tirthankars": "२४ तीर्थंकर",
     "ourWebsite": "हमारी वेबसाइट",
     "veerSamvat": "वीर संवत 2545-2546"
   },

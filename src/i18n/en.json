@@ -16,6 +16,7 @@
   "search": "Search",
   "cities": "Cities",
   "tabs": {
+    "tithi": "Tithi in Month",
     "jain_calendar": "Jain Calendar",
     "pachakkhan": "Pachakkhan",
     "choghadiya": "Choghadiya"
@@ -192,7 +193,7 @@
     "pachakkhan": "Pachakkhan",
     "tapAaradhana": "Tap / Aaradhana",
     "kalyanak": "Kalyanak",
-    "tirthankars": "Tirthankars",
+    "tirthankars": "24 Tirthankars",
     "ourWebsite": "Our Website",
     "veerSamvat": "Veer Samvat 2545-2546"
   },

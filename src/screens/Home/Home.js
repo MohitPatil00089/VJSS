@@ -602,7 +602,7 @@ const Home = ({ route, navigation }) => {
             subtitle: i18n.t('menu.veerSamvat'),
             onPress: () => navigation.navigate('JainCalendar')
         },
-        { id: '2', title: i18n.t('menu.tithisInMonth'), onPress: () => navigation.navigate('JainCalendar') },
+        { id: '2', title: i18n.t('menu.tithisInMonth'), onPress: () => navigation.navigate('tithisInMonth') },
         { id: '3', title: i18n.t('menu.pachakkhan'), onPress: () => navigation.navigate('Pachhakkhan') },
         { id: '4', title: i18n.t('menu.tapAaradhana'), onPress: () => navigation.navigate('TapAaradhana') },
         { id: '5', title: i18n.t('menu.kalyanak'), onPress: () => navigation.navigate('Kalyanak') },
@@ -707,6 +707,15 @@ const Home = ({ route, navigation }) => {
         });
     };
 
+
+    const [godIndex, setGodIndex] = useState(0);
+    const godNames = ['God1', 'God2', 'God3', 'God4'];
+
+    // ---------- handlers ----------
+    const prevGod = () =>
+        setGodIndex((p) => (p === 0 ? godNames.length - 1 : p - 1));
+    const nextGod = () =>
+        setGodIndex((p) => (p === godNames.length - 1 ? 0 : p + 1));
     return (
         <ImageBackground
             source={require('../../assets/home_background.jpeg')}
@@ -798,6 +807,20 @@ const Home = ({ route, navigation }) => {
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
+
+                                    {godNames && godNames.length > 0 && (
+                                        <View style={styles.godContainer}>
+                                            <TouchableOpacity onPress={prevGod} activeOpacity={0.7}>
+                                                <Icon name="chevron-back" size={24} color="#fff" />
+                                            </TouchableOpacity>
+
+                                            <Text style={styles.godName}>{godNames[godIndex]}</Text>
+
+                                            <TouchableOpacity onPress={nextGod} activeOpacity={0.7}>
+                                                <Icon name="chevron-forward" size={24} color="#fff" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
 
                                     {activeTab === 'pachakkhan' ? (
                                         <>
@@ -911,16 +934,20 @@ const Home = ({ route, navigation }) => {
                                             </Text>
                                         </View>
                                         {/* Menu Items */}
-                                        <View
-                                            key={menuItems[0].id}
+                                        <TouchableOpacity
                                             style={styles.menuItem}
+                                            onPress={() => navigation.navigate('JainCalendar')}
                                         >
                                             <View style={styles.menuItemContent}>
-                                                <Text style={styles.menuItemTitle}>{menuItems[0].title}</Text>
-                                                <Text style={styles.menuItemSubtitle}>{menuItems[0].subtitle}</Text>
+                                                <Text style={styles.menuItemTitle}>
+                                                    {i18n.t('menu.jainCalendar')}
+                                                </Text>
+                                                <Text style={styles.menuItemSubtitle}>
+                                                    {i18n.t('menu.veerSamvat')}
+                                                </Text>
                                             </View>
-                                            {/* <Icon name="chevron-forward" size={20} color="#fff" /> */}
-                                        </View>
+                                            <Icon name="chevron-forward" size={20} color="#fff" />
+                                        </TouchableOpacity>
                                         <View style={styles.menuContainer}>
                                             {menuItems.slice(1).map((item) => (
                                                 <TouchableOpacity
@@ -1211,6 +1238,24 @@ const styles = StyleSheet.create({
     dateText: {
         color: 'white',
         fontSize: 16,
+    },
+    godContainer: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 15,
+        marginHorizontal: 15,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexDirection: 'row',
+        paddingVertical: 10,
+        marginTop: 15,
+        marginBottom: 10,
+        padding: 5,
+    },
+    godName: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
     },
     timingsContainer: {
         // backgroundColor: 'rgba(255, 255, 255, 0.1)',

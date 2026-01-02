@@ -31,6 +31,26 @@ export const getFrontCalendar = async (flag, year, month, month_in_gujarati, typ
     }
 };
 
+export const getallTithiFestivals = async () => {
+    try {
+        const response = await fetch(
+            `${baseUrl}get-all-tithi-festivals`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('API Error:', error);
+        return null;
+    }
+};
+
 // Add this function to global.js
 export const getAllLocations = async () => {
     try {

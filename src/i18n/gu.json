@@ -13,6 +13,7 @@
   "about": "વિશે",
   "faq": "સામાન્ય પ્રશ્નો",
   "tabs": {
+    "tithi": "તિથિ માસમાં",
     "jain_calendar": "જૈન કેલેન્ડર",
     "pachakkhan": "પચ્ચક્ખાણ",
     "choghadiya": "ચોઘડિયા"
@@ -206,7 +207,7 @@
     "pachakkhan": "પચખાણ",
     "tapAaradhana": "તપ / આરાધના",
     "kalyanak": "કલ્યાણક",
-    "tirthankars": "તીર્થંકરો",
+    "tirthankars": "૨૪ તીર્થંકરો",
     "ourWebsite": "અમારી વેબસાઇટ",
     "veerSamvat": "વીર સંવત 2545-2546"
   },

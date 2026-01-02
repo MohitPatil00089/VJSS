@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import CitySelectionScreen from './src/screens/CitySelectionScreen';
 import Home from './src/screens/Home/Home';
 import JainCalendarScreen from './src/screens/JainCalendarScreen';
+import TithisInMonth from './src/screens/TithisInMonth';
 import PachhakkhanScreen from './src/screens/PachhakkhanScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import PachhakkhanDetailScreen from './src/screens/PachhakkhanDetailScreen';
@@ -167,6 +168,7 @@ const App = () => {
                         options={{ gestureEnabled: false }}
                     />
                     <Stack.Screen name="JainCalendar" component={JainCalendarScreen} />
+                    <Stack.Screen name="tithisInMonth" component={TithisInMonth} />
                     <Stack.Screen name="Pachhakkhan" component={PachhakkhanScreen} />
                     <Stack.Screen name="PachhakkhanDetail" component={PachhakkhanDetailScreen} />
                     <Stack.Screen name="TapAaradhana" component={TapAaradhanaScreen} />
