@@ -1,191 +1,316 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    FlatList,
     TouchableOpacity,
     ActivityIndicator,
-    ScrollView
+    ScrollView,
+    SectionList
 } from 'react-native';
-import { getEventsForDate } from '../database/database';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
-import { convertDateMonthsOnly, convertDigitsOnly, convertJainDateNumber, formatJainDate, formatMonthYear } from '../utils/numberConverter';
-import { getAllTithiFestivals } from '../component/global';
+import { getFrontCalendar } from '../component/global';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LanguageSelectorModal from '../component/LanguageSelectorModal';
+
+const pakshaTranslations = {
+    en: { 'Sud': 'Sud', 'Vad': 'Vad' },
+    gu: { 'Sud': 'સુદ', 'Vad': 'વદ' },
+    hi: { 'Sud': 'સુદ', 'Vad': 'વદ' }
+};
+
+const API_URL = "https://absolutewebdevelopment.in/vjss/api/public/v1/get-all-tithi-festivals";
 
 const TithisInMonth = ({ navigation }) => {
     const [showLanguageModal, setShowLanguageModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [calendarData, setCalendarData] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [events, setEvents] = useState([]);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [importing, setImporting] = useState(false);
-    const [language, setLanguage] = useState(i18n.locale);
     const [activeTab, setActiveTab] = useState('Tithi');
+    const [apiError, setApiError] = useState(null);
+    const [festivalsData, setFestivalsData] = useState([]);
+    const [festivalsLoading, setFestivalsLoading] = useState(false);
+    const [festivalsError, setFestivalsError] = useState(null);
+    const [shubhDaysData, setShubhDaysData] = useState([]);
+    const [shubhDaysLoading, setShubhDaysLoading] = useState(false);
+    const [shubhDaysError, setShubhDaysError] = useState(null);
+    const currentYear = '2026';
+
+
+    const monthToNumber = {
+        January: 1, February: 2, March: 3, April: 4,
+        May: 5, June: 6, July: 7, August: 8,
+        September: 9, October: 10, November: 11, December: 12,
+    };
+
+
+    const monthNames = {
+        en: ['Maha', 'Phalguna', 'Chaitra', 'Vaishakh', 'Jyeshta', 'Ashadha', 'Shravana', 'Bhadrapada', 'Ashwin', 'Kartik', 'Margashirsha', 'Pausha'],
+        gu: ['મહા', 'ફાગુણ', 'ચૈત્ર', 'વૈશાખ', 'જ્યેષ્ઠ', 'આષાઢ', 'શ્રાવણ', 'ભાદરપદ', 'આસો', 'કારતક', 'માર્ગશીર્ષ', 'પૌષ'],
+        hi: ['महा', 'फागुन', 'चैत्र', 'वैशाख', 'ज्येष्ठ', 'आषाढ़', 'श्रावण', 'भाद्रपद', 'आश्विन', 'कार्तिक', 'मार्गशीर्ष', 'पौष']
+    };
+
 
     useEffect(() => {
-        let lang = i18n.locale;
-        setLanguage(lang);
-        loadMonthData(currentMonth);
-    }, []);
+        let isMounted = true;
+       
+        const loadAllData = async () => {
+            try {
+                setLoading(true);
+                setApiError(null);
+               
+                const selectedCityStr = await AsyncStorage.getItem('selectedCity');
+                const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
+                    lat: '22.2726554',
+                    long: '73.1969701',
+                    country_code: 'IN'
+                };
+                const allMonthsData = [];
+               
 
-    const loadMonthData = async (date) => {
-        try {
-            setLoading(true);
-            const selectedCityStr = await AsyncStorage.getItem('selectedCity');
-            const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
-                lat: '22.2726554',
-                long: '73.1969701',
-                country_code: 'IN'
-            };
-            const year = date.getFullYear().toString();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const response = await getFrontCalendar(
-                'multiple',
-                year,
-                month,
-                month,
-                'gregorian',
-                selectedCity.lat.toString(),
-                selectedCity.long.toString(),
-                selectedCity.country_code || 'IN',
-                '2082'
-            );
-            if (response && response.data) {
-                setCalendarData(response.data);
-                const today = new Date();
-                const todayStr = today.toISOString().split('T')[0];
-                const todayInMonth = response.data.some(d => d.dateString === todayStr);
-                if (todayInMonth) {
-                    setSelectedDate(todayStr);
+                for (let month = 1; month <= 12; month++) {
+                    const monthStr = String(month).padStart(2, '0');
+                   
+                    const response = await getFrontCalendar(
+                        'multiple', currentYear, monthStr, monthStr, 'gregorian',
+                        selectedCity.lat.toString(), selectedCity.long.toString(),
+                        selectedCity.country_code || 'IN', '2082'
+                    );
+                   
+                    if (response?.data && Array.isArray(response.data)) {
+                        allMonthsData.push(...response.data);
+                    }
+                }
+               
+                if (isMounted) {
+                    setCalendarData(allMonthsData);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setApiError(error.message);
+                    setCalendarData([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
                 }
             }
-        } catch (error) {
-            console.error('Error loading month data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
+       
+        loadAllData();
+       
+        return () => { isMounted = false; };
+    }, []);
+
 
     useEffect(() => {
-        if (!loading) {
-            loadMonthData(currentMonth);
+        if (activeTab === 'Events') {
+            fetchFestivalData();
         }
-    }, [currentMonth]);
+    }, [activeTab, i18n.locale]);
 
-    const handlePrevMonth = () => {
-        const prev = new Date(currentMonth);
-        prev.setMonth(currentMonth.getMonth() - 1);
-        setCurrentMonth(prev);
-        loadMonthData(prev);
-    };
-
-    const handleNextMonth = () => {
-        const next = new Date(currentMonth);
-        next.setMonth(currentMonth.getMonth() + 1);
-        setCurrentMonth(next);
-        loadMonthData(next);
-    };
-
-    const loadEvents = async (date) => {
+    const fetchFestivalData = async () => {
         try {
-            const events = await getEventsForDate(date);
-            setEvents(events || []);
+            setFestivalsLoading(true);
+            setFestivalsError(null);
+            const response = await fetch(API_URL);
+            const json = await response.json();
+            const data = json.data || [];
+            setFestivalsData(formatFestivalsByMonth(data, i18n.locale));
         } catch (error) {
-            console.error('Error loading events:', error);
+            console.error("Festival API Error:", error);
+            setFestivalsError(error.message);
+        } finally {
+            setFestivalsLoading(false);
         }
     };
 
-    const handleDateSelect = async (date) => {
-        setSelectedDate(date);
-        const [year, month, day] = date.split('-');
-        const dateObj = new Date(Date.UTC(year, month - 1, day));
-        const yyyyMmDd = dateObj.toISOString().slice(0, 10);
-        navigation.navigate('Home', {
-            selectedDate: yyyyMmDd
+    const formatFestivalsByMonth = (data, lang) => {
+        const monthMap = {};
+        data.forEach((item) => {
+            const monthKey = `${item.en_greg_month} ${item.year}`;
+            if (!monthMap[monthKey]) {
+                monthMap[monthKey] = [];
+            }
+            
+
+            let festivalName = item.en_festival;
+            if (lang === 'gu') festivalName = item.gu_festival;
+            else if (lang === 'hi') festivalName = item.hi_festival;
+            
+            monthMap[monthKey].push({
+                title: festivalName,
+                date: `${item.day.padStart(2, "0")}/${getMonthNumber(item.en_greg_month)}/${item.year}`,
+                dateString: `${item.year}-${getMonthNumber(item.en_greg_month)}-${item.day.padStart(2, "0")}`
+            });
         });
+        
+        return Object.keys(monthMap).map((month) => ({
+            title: month,
+            data: monthMap[month],
+        }));
     };
 
-    const calendarGridData = useMemo(() => {
-        if (!calendarData || calendarData.length === 0) return [];
-        const first = new Date(calendarData[0].dateString);
-        const leading = first.getDay();
-        const leadingBlanks = Array.from({ length: leading }, (_, i) => ({ id: `p-${i}`, placeholder: true }));
-        const total = leading + calendarData.length;
-        const trailing = (7 - (total % 7)) % 7;
-        const trailingBlanks = Array.from({ length: trailing }, (_, i) => ({ id: `t-${i}`, placeholder: true }));
-        return [...leadingBlanks, ...calendarData, ...trailingBlanks];
-    }, [calendarData]);
 
-    const isToday = (dateString) => {
-        const today = new Date().toISOString().split('T')[0];
-        return dateString === today;
-    };
-
-    const renderCalendarItem = ({ item }) => {
-        if (item.placeholder) {
-            return <View style={styles.calendarCell} />;
+    useEffect(() => {
+        if (activeTab === 'Shubh Days') {
+            fetchShubhDin();
         }
-        const isSelected = selectedDate === item.dateString;
-        const isTodayDate = isToday(item.dateString);
-        const isTithiHighlighted = item.tithi === '8' || item.tithi === '14' || (item.tithi === '5' && item.paksha_type?.toLowerCase() === 'sud');
-        return (
-            <TouchableOpacity
-                style={[
-                    styles.calendarCell,
-                    isSelected && styles.selectedCell,
-                    isTodayDate && styles.todayCell,
-                    isTithiHighlighted && styles.tithiHighlightedCell
-                ]}
-                onPress={() => handleDateSelect(item.dateString)}
-                activeOpacity={0.7}
-            >
-                <Text style={[
-                    styles.gregorianDate,
-                    isSelected && styles.selectedDateText,
-                    isTodayDate && !isSelected && styles.todayText,
-                    isTithiHighlighted && styles.tithiHighlightedText
-                ]}>
-                    {convertJainDateNumber(item.tithi, i18n.locale)}
-                </Text>
-                <Text style={[
-                    styles.jainDateSmall,
-                    isSelected && styles.selectedJainText,
-                    isTithiHighlighted && styles.tithiHighlightedText
-                ]}>
-                    {i18n.locale == "en" ? item.guj_month_english_name : i18n.locale == "gu" ? item.guj_month_gujarati_name : item.guj_month_hindi_name}
-                    {` (`}
-                    {i18n.t(`date.${(item.paksha_type)?.toLowerCase()}`)}
-                    {`)`}
-                </Text>
-                <Text style={[
-                    styles.jainDateSmall,
-                    isSelected && styles.selectedJainText,
-                    isTithiHighlighted && styles.tithiHighlightedText
-                ]}>
-                    {convertJainDateNumber(item.day, i18n.locale)}/{convertJainDateNumber(item.month, i18n.locale)}
-                </Text>
-            </TouchableOpacity>
-        );
+    }, [activeTab, i18n.locale]);
+
+    const fetchShubhDin = async () => {
+        try {
+            setShubhDaysLoading(true);
+            setShubhDaysError(null);
+            const response = await fetch(API_URL);
+            const json = await response.json();
+            const data = json.data || [];
+            
+
+            let filtered = data.filter((item) => item.shubh_din === 1) || [];
+            
+
+            filtered.sort((a, b) => {
+                if (a.year !== b.year) return a.year - b.year;
+                const monthA = monthToNumber[a.en_greg_month];
+                const monthB = monthToNumber[b.en_greg_month];
+                if (monthA !== monthB) return monthA - monthB;
+                return parseInt(a.day) - parseInt(b.day);
+            });
+            
+            setShubhDaysData(formatShubhDaysByMonth(filtered, i18n.locale));
+        } catch (error) {
+            console.error("Shubh Days API Error:", error);
+            setShubhDaysError(error.message);
+        } finally {
+            setShubhDaysLoading(false);
+        }
     };
 
-    if (loading || importing) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF6B35" />
-            </View>
-        );
-    }
+    const formatShubhDaysByMonth = (data, lang) => {
+        const monthMap = {};
+        data.forEach((item) => {
+            const key = `${item.en_greg_month} ${item.year}`;
+            if (!monthMap[key]) {
+                monthMap[key] = [];
+            }
+            
+
+            const monthIndex = monthToNumber[item.en_greg_month] - 1;
+            const gujMonth = monthNames[lang][monthIndex];
+            
+
+            const pakshaType = item.en_paksha || 'Sud';
+            const paksha = pakshaTranslations[lang]?.[pakshaType] || pakshaType;
+            
+
+            const tithiNumber = item.en_tithi || '';
+            
+            monthMap[key].push({
+                gujMonth,
+                paksha,
+                tithiNumber,
+                day: String(item.day).padStart(2, '0'),
+                monthNum: getMonthNumber(item.en_greg_month),
+                year: item.year,
+                dateKey: `${item.year}-${getMonthNumber(item.en_greg_month)}-${item.day.padStart(2, "0")}`,
+                dateString: `${item.year}-${getMonthNumber(item.en_greg_month)}-${item.day.padStart(2, "0")}`
+            });
+        });
+        
+        // Get sorted section titles
+        const sortedTitles = Object.keys(monthMap).sort((a, b) => {
+            const [monthA, yearA] = a.split(" ");
+            const [monthB, yearB] = b.split(" ");
+            if (yearA !== yearB) return yearA - yearB;
+            return monthToNumber[monthA] - monthToNumber[monthB];
+        });
+        
+        // Convert to SectionList format
+        return sortedTitles.map((title) => ({
+            title,
+            data: monthMap[title],
+        }));
+    };
+
+    const getMonthNumber = (month) => {
+        const months = {
+            January: "01", February: "02", March: "03", April: "04",
+            May: "05", June: "06", July: "07", August: "08",
+            September: "09", October: "10", November: "11", December: "12",
+        };
+        return months[month];
+    };
+
+
+    const isTithiHighlighted = (item) => {
+        return item.tithi === '8' ||
+               item.tithi === '14' ||
+               (item.tithi === '5' && item.paksha_type?.toLowerCase() === 'sud');
+    };
+
+
+    const getDisplayData = (item) => {
+        const isEnglish = i18n.locale === 'en';
+        const isGujarati = i18n.locale === 'gu';
+       
+        const gujMonth = isEnglish ? item.guj_month_english_name :
+                        isGujarati ? item.guj_month_gujarati_name :
+                        item.guj_month_hindi_name;
+       
+        const pakshaType = item.paksha_type || '';
+        const paksha = pakshaTranslations[i18n.locale]?.[pakshaType] || pakshaType;
+       
+        const tithiNumber = item.tithi;
+        const monthName = isEnglish ? item.gregorian_english_month_name :
+                         isGujarati ? item.gregorian_gujarati_month_name :
+                         item.gregorian_hindi_month_name;
+       
+        return {
+            gujMonth,
+            paksha,
+            tithiNumber,
+            monthName,
+            day: String(item.day).padStart(2, '0'),
+            monthNum: item.month,
+            year: item.year,
+            dateKey: item.dateString
+        };
+    };
+
+
+    const handleCardPress = (dateString) => {
+        navigation.navigate('Home', { selectedDate: dateString });
+    };
+
+
+    const groupByMonth = (data) => {
+        const grouped = {};
+        data.forEach(item => {
+            const monthKey = item.month;
+            if (!grouped[monthKey]) {
+                grouped[monthKey] = [];
+            }
+            grouped[monthKey].push(item);
+        });
+        return grouped;
+    };
+
+    const getSortedMonthEntries = (groupedData) => {
+        return Object.entries(groupedData)
+            .sort(([monthA], [monthB]) => parseInt(monthA) - parseInt(monthB));
+    };
+
+
+    const tithiHighlightedData = calendarData.filter(isTithiHighlighted);
+    const tithiGrouped = groupByMonth(tithiHighlightedData);
+    const tithiSortedMonths = getSortedMonthEntries(tithiGrouped);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
+
             <View style={styles.mainHeader}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Icon name="arrow-back" size={24} color="#fff" />
@@ -196,7 +321,7 @@ const TithisInMonth = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Bottom Tab Bar */}
+
             <View style={styles.bottomTabBar}>
                 <TouchableOpacity
                     style={[styles.tabButton, activeTab === 'Tithi' && styles.activeTab]}
@@ -224,77 +349,164 @@ const TithisInMonth = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Tab Content */}
-            <ScrollView style={styles.tabContent}>
-                {activeTab === 'Tithi' && (
-                    <View style={styles.tabInner}>
-                        <Text style={styles.tabTitle}>
-                            {i18n.locale === 'en'
-                                ? `${currentMonth.toLocaleString('en', { month: 'long' })} ${currentMonth.getFullYear()}`
-                                : formatMonthYear(currentMonth).month + ' ' + formatMonthYear(currentMonth).year}
-                        </Text>
 
-                        {calendarData.map((d) => (
-                            <View key={d.dateString} style={styles.shubhDayCard}>
-                                <Text style={styles.shubhDayText}>
-                                    {i18n.locale === 'en'
-                                        ? `${d.en_guj_month} ${d.en_paksha} ${d.en_tithi}`
-                                        : i18n.locale === 'gu'
-                                        ? `${d.gu_guj_month} ${d.gu_paksha} ${d.gu_tithi}`
-                                        : `${d.hi_guj_month} ${d.hi_paksha} ${d.hi_tithi}`}{' '}
-                                    {String(d.day).padStart(2, '0')}/{String(currentMonth.getMonth() + 1).padStart(2, '0')}/{currentMonth.getFullYear()}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
-                )}
+            {activeTab === 'Events' ? (
+                <View style={styles.eventsContainer}>
+                    {festivalsLoading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#FF6B35" />
+                            <Text style={styles.loadingText}>Loading festivals...</Text>
+                        </View>
+                    ) : festivalsError ? (
+                        <View style={styles.errorContainer}>
+                            <Icon name="error-outline" size={48} color="#FF6B35" />
+                            <Text style={styles.errorText}>Failed to load festivals</Text>
+                            <Text style={styles.errorDetail}>{festivalsError}</Text>
+                            <TouchableOpacity style={styles.retryButton} onPress={fetchFestivalData}>
+                                <Text style={styles.retryButtonText}>Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <SectionList
+                            sections={festivalsData}
+                            keyExtractor={(item, index) => index.toString()}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.sectionListContent}
+                            renderSectionHeader={({ section }) => (
+                                <Text style={styles.monthHeader}>{section.title}</Text>
+                            )}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity 
+                                    style={styles.festivalCard}
+                                    onPress={() => handleCardPress(item.dateString)}
+                                >
+                                    <View style={styles.left}>
+                                        <View style={styles.greenDot} />
+                                    </View>
 
-                {activeTab === 'Shubh Days' && (
-                    <View style={styles.tabInner}>
-                        <Text style={styles.tabTitle}>Shubh Days – {formatMonthYear(currentMonth).month} {currentMonth.getFullYear()}</Text>
+                                    <View style={styles.center}>
+                                        <Text style={styles.festivalText}>{item.title}</Text>
+                                        <Text style={styles.dateText}>{item.date}</Text>
+                                    </View>
 
-                        {calendarData
-                            .filter((d) => d.shubh_din === true)
-                            .map((d) => (
-                                <View key={d.dateString} style={styles.shubhDayCard}>
-                                    <Text style={styles.shubhDayText}>
-                                        {i18n.locale === 'en'
-                                            ? `${d.en_guj_month} ${d.en_paksha} ${d.en_tithi}`
-                                            : i18n.locale === 'gu'
-                                            ? `${d.gu_guj_month} ${d.gu_paksha} ${d.gu_tithi}`
-                                            : `${d.hi_guj_month} ${d.hi_paksha} ${d.hi_tithi}`}{' '}
-                                        {String(d.day).padStart(2, '0')}/{String(currentMonth.getMonth() + 1).padStart(2, '0')}/{currentMonth.getFullYear()}
-                                    </Text>
-                                </View>
-                            ))}
-
-                        {calendarData.filter((d) => d.shubh_din === true).length === 0 && (
-                            <Text style={styles.noEventsText}>No Shubh days in this month.</Text>
-                        )}
-                    </View>
-                )}
-
-                {activeTab === 'Events' && (
-                    <View style={styles.tabInner}>
-                        <Text style={styles.tabTitle}>Events</Text>
-                        {events.length > 0 ? (
-                            events.map((ev, i) => (
-                                <View key={i} style={styles.eventCard}>
-                                    <Text style={styles.eventTitle}>{ev.title}</Text>
-                                    <Text style={styles.eventDesc}>{ev.description}</Text>
-                                </View>
-                            ))
-                        ) : (
-                            <Text style={styles.noEventsText}>No events for this month.</Text>
-                        )}
-                    </View>
-                )}
-            </ScrollView>
+                                    <View style={styles.right}>
+                                        <Ionicons name="chevron-forward" size={26} color="#9E1B17" />
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    )}
+                </View>
+            ) : activeTab === 'Shubh Days' ? (
+                <View style={styles.eventsContainer}>
+                    {shubhDaysLoading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#FF6B35" />
+                            <Text style={styles.loadingText}>Loading Shubh Days...</Text>
+                        </View>
+                    ) : shubhDaysError ? (
+                        <View style={styles.errorContainer}>
+                            <Icon name="error-outline" size={48} color="#FF6B35" />
+                            <Text style={styles.errorText}>Failed to load Shubh Days</Text>
+                            <Text style={styles.errorDetail}>{shubhDaysError}</Text>
+                            <TouchableOpacity style={styles.retryButton} onPress={fetchShubhDin}>
+                                <Text style={styles.retryButtonText}>Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <SectionList
+                            sections={shubhDaysData}
+                            keyExtractor={(item, index) => index.toString()}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.sectionListContent}
+                            renderSectionHeader={({ section }) => (
+                                <Text style={styles.monthHeader}>{section.title}</Text>
+                            )}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity 
+                                    style={styles.shubhDayCard}
+                                    onPress={() => handleCardPress(item.dateString)}
+                                >
+                                    <View style={styles.cardContent}>
+                                        <View style={styles.greenDot} />
+                                        <View style={styles.cardText}>
+                                            <Text style={styles.shubhDayMainText}>
+                                                {item.gujMonth} {item.paksha} {item.tithiNumber}
+                                            </Text>
+                                            <Text style={styles.shubhDayDateText}>
+                                                {item.day}/{item.monthNum}/{item.year}
+                                            </Text>
+                                        </View>
+                                        <Icon name="chevron-right" size={24} color="#9E1B17" style={styles.rightArrow} />
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    )}
+                </View>
+            ) : (
+                <ScrollView style={styles.tabContent}>
+                    {loading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#FF6B35" />
+                            <Text style={styles.loadingText}>Loading calendar data...</Text>
+                        </View>
+                    ) : apiError ? (
+                        <View style={styles.errorContainer}>
+                            <Icon name="error-outline" size={48} color="#FF6B35" />
+                            <Text style={styles.errorText}>Failed to load data</Text>
+                            <Text style={styles.errorDetail}>{apiError}</Text>
+                            <TouchableOpacity style={styles.retryButton} onPress={() => navigation.replace('TithisInMonth')}>
+                                <Text style={styles.retryButtonText}>Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.tabInner}>
+                            {tithiHighlightedData.length === 0 ? (
+                                <Text style={styles.noEventsText}>No tithi data available.</Text>
+                            ) : (
+                                tithiSortedMonths.map(([monthNum, items]) => {
+                                    const monthName = items[0]?.gregorian_english_month_name || 'Month';
+                                    const year = items[0]?.year || currentYear;
+                                    return (
+                                        <View key={monthNum}>
+                                            <Text style={styles.monthSectionTitle}>{monthName} {year}</Text>
+                                            {items.map((d) => {
+                                                const data = getDisplayData(d);
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={data.dateKey}
+                                                        style={styles.shubhDayCard}
+                                                        onPress={() => handleCardPress(d.dateString)}
+                                                    >
+                                                        <View style={styles.cardContent}>
+                                                            <View style={styles.greenDot} />
+                                                            <View style={styles.cardText}>
+                                                                <Text style={styles.shubhDayMainText}>
+                                                                    {data.gujMonth} {data.paksha} {data.tithiNumber}
+                                                                </Text>
+                                                                <Text style={styles.shubhDayDateText}>
+                                                                    {data.day}/{data.monthNum}/{data.year}
+                                                                </Text>
+                                                            </View>
+                                                            <Icon name="chevron-right" size={24} color="#9E1B17" style={styles.rightArrow} />
+                                                        </View>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    );
+                                })
+                            )}
+                        </View>
+                    )}
+                </ScrollView>
+            )}
 
             <LanguageSelectorModal
                 visible={showLanguageModal}
                 onClose={() => setShowLanguageModal(false)}
-                currentLang={language}
+                currentLang={i18n.locale}
             />
         </SafeAreaView>
     );
@@ -323,205 +535,6 @@ const styles = StyleSheet.create({
     },
     headerRight: {
         width: 30,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F8F9FA',
-    },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        color: '#8B4513',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
-    },
-    navButton: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 20,
-        backgroundColor: '#F5F5F5',
-    },
-    navButtonText: {
-        fontSize: 28,
-        fontWeight: '300',
-        color: '#333',
-    },
-    monthYearContainer: {
-        alignItems: 'center',
-    },
-    monthText: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1A1A1A',
-    },
-    yearText: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 2,
-    },
-    weekDaysContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
-    },
-    weekDayCell: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    weekDayText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#666',
-        textTransform: 'uppercase',
-    },
-    calendarGrid: {
-        backgroundColor: '#FFFFFF',
-        paddingHorizontal: 4,
-    },
-    calendarCell: {
-        width: '14.28%',
-        aspectRatio: 0.85,
-        padding: 4,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginVertical: 2,
-        overflow: 'hidden',
-    },
-    selectedCell: {
-        backgroundColor: '#FF6B35',
-        borderRadius: 12,
-    },
-    todayCell: {
-        borderWidth: 2,
-        borderColor: '#FF6B35',
-        borderRadius: 12,
-    },
-    tithiHighlightedCell: {
-        backgroundColor: '#48bf4cff',
-        borderRadius: 12,
-    },
-    gregorianDate: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1A1A1A',
-        marginBottom: 1,
-    },
-    selectedDateText: {
-        color: '#FFFFFF',
-    },
-    tithiHighlightedText: {
-        color: '#FFFFFF',
-    },
-    todayText: {
-        color: '#FF6B35',
-    },
-    jainDateSmall: {
-        fontSize: 8,
-        color: '#666',
-        textAlign: 'center',
-    },
-    selectedJainText: {
-        color: '#FFFFFF',
-    },
-    eventDot: {
-        width: 4,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: '#FF6B35',
-        marginTop: 2,
-    },
-    eventDotSelected: {
-        backgroundColor: '#FFFFFF',
-    },
-    eventsSection: {
-        flex: 1,
-        backgroundColor: '#F8F9FA',
-    },
-    eventsSectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 12,
-    },
-    eventsSectionTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1A1A1A',
-    },
-    selectedDateLabel: {
-        fontSize: 14,
-        color: '#666',
-    },
-    eventsScrollView: {
-        flex: 1,
-        paddingHorizontal: 20,
-    },
-    eventCard: {
-        flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    eventIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#FFF5F2',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    eventIcon: {
-        fontSize: 20,
-    },
-    eventContent: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    eventTitle: {
-        fontSize: 15,
-        fontWeight: '500',
-        color: '#1A1A1A',
-        marginBottom: 4,
-    },
-    eventDescription: {
-        fontSize: 13,
-        color: '#666',
-    },
-    noEventsContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 40,
-    },
-    noEventsEmoji: {
-        fontSize: 48,
-        marginBottom: 12,
-    },
-    noEventsText: {
-        fontSize: 15,
-        color: '#999',
-        textAlign: 'center',
     },
     bottomTabBar: {
         flexDirection: 'row',
@@ -557,37 +570,158 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 150,
     },
+    eventsContainer: {
+        flex: 1,
+        backgroundColor: '#F8F9FA',
+    },
+    sectionListContent: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 150,
+    },
     tabInner: {
         paddingBottom: 30,
     },
-    tabTitle: {
+    monthSectionTitle: {
         fontSize: 18,
         fontWeight: '600',
-        marginBottom: 12,
         color: '#1A1A1A',
+        marginTop: 16,
+        marginBottom: 12,
+        paddingLeft: 8,
     },
     shubhDayCard: {
         backgroundColor: '#FFFFFF',
-        padding: 12,
+        padding: 15,
         borderRadius: 10,
-        marginBottom: 8,
-        elevation: 1,
+        marginBottom: 10,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
     },
-    shubhDayText: {
+    cardContent: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+    },
+    cardText: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    greenDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#4CAF50',
+    },
+    rightArrow: {
+        marginLeft: 8,
+    },
+    shubhDayMainText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1A1A1A',
+        marginBottom: 4,
+    },
+    shubhDayDateText: {
         fontSize: 14,
-        color: '#333',
-    },
-    eventCard: {
-        backgroundColor: '#FFFFFF',
-        padding: 12,
-        borderRadius: 10,
-        marginBottom: 8,
-        elevation: 1,
-    },
-    eventDesc: {
-        fontSize: 12,
         color: '#666',
-        marginTop: 4,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F8F9FA',
+        paddingTop: 50,
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: '#8B4513',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F8F9FA',
+        padding: 20,
+        paddingTop: 50,
+    },
+    errorText: {
+        marginTop: 16,
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#FF6B35',
+    },
+    errorDetail: {
+        marginTop: 8,
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+    },
+    retryButton: {
+        marginTop: 20,
+        backgroundColor: '#9E1B17',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    noEventsText: {
+        fontSize: 15,
+        color: '#999',
+        textAlign: 'center',
+        marginTop: 20,
+    },
+
+    monthHeader: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#1A1A1A',
+        marginVertical: 14,
+        paddingLeft: 8,
+    },
+    festivalCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        paddingVertical: 16,
+        paddingHorizontal: 14,
+        marginBottom: 10,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+    },
+    left: {
+        width: 24,
+        alignItems: 'center',
+    },
+    center: {
+        flex: 1,
+        paddingLeft: 10,
+    },
+    right: {
+        width: 30,
+        alignItems: 'flex-end',
+    },
+    festivalText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1A1A1A',
+    },
+    dateText: {
+        marginTop: 6,
+        fontSize: 14,
+        color: '#666',
     },
 });
 

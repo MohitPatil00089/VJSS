@@ -1,7 +1,42 @@
 export const baseUrl = "https://absolutewebdevelopment.in/vjss/api/public/v1/";
 
+// export const getFrontCalendar = async (flag, year, month, month_in_gujarati, type, latitude, longitude, country_code, vikram_samvat) => {
+//     try {
+//         const response = await fetch(
+//             `${baseUrl}getfrontcalendar`,
+//             {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                 },
+//                 body: JSON.stringify({
+//                     flag: flag,
+//                     year: year,
+//                     month: month,
+//                     month_in_gujarati: month_in_gujarati,
+//                     type: type,
+//                     latitude: latitude,
+//                     longitude: longitude,
+//                     country_code: country_code,
+//                     vikram_samvat: vikram_samvat,
+//                 }),
+//             }
+//         );
+
+//         const result = await response.json();
+//         // console.log('Calendar Response:', result);
+//         return result;
+//     } catch (error) {
+//         console.error('API Error:', error);
+//     }
+// };
+
+
+
+//temp
 export const getFrontCalendar = async (flag, year, month, month_in_gujarati, type, latitude, longitude, country_code, vikram_samvat) => {
     try {
+        console.log('Fetching calendar with params:', { flag, year, month, latitude, longitude });
         const response = await fetch(
             `${baseUrl}getfrontcalendar`,
             {
@@ -24,10 +59,11 @@ export const getFrontCalendar = async (flag, year, month, month_in_gujarati, typ
         );
 
         const result = await response.json();
-        // console.log('Calendar Response:', result);
+        console.log('Calendar API Response:', result);
         return result;
     } catch (error) {
         console.error('API Error:', error);
+        throw error; // Re-throw to handle in component
     }
 };
 
