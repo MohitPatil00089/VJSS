@@ -454,6 +454,8 @@ const Home = ({ route, navigation }) => {
         );
     };
 
+    const getChoghadiyaDotColor = name => /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(name || '') ? '#FF8C00' : '#424242';
+
     const processTimingData = (timingData, lang) => {
         const langKey = lang === 'en' ? 'english' : lang === 'gu' ? 'gujarati' : 'hindi';
         return Object.entries(timingData[langKey] || timingData.english)
@@ -958,9 +960,7 @@ const Home = ({ route, navigation }) => {
                                                         <View
                                                             style={[
                                                                 styles.timingDot,
-                                                                {
-                                                                    backgroundColor: index % 2 === 1 ? '#ff8e34' : 'gray',
-                                                                },
+                                                                { backgroundColor: getChoghadiyaDotColor(item.name) },
                                                             ]}
                                                         >
                                                             {index === activeIndex && (
@@ -996,6 +996,16 @@ const Home = ({ route, navigation }) => {
                                                     ? i18n.t('date.today')
                                                     : moment(selectedDate).format('DD MMMM YYYY')}
                                             </Text>
+                                            <View style={{ flex: 1, alignItems: 'center' }}>
+                                                {globalData.tithi === '8' || globalData.tithi === '14' || (globalData.tithi === '5' &&
+                                                    globalData.paksha_type?.toLowerCase() === 'sud') ? (
+                                                    <Image
+                                                        style={styles.middleImage}
+                                                        source={require('../../assets/no_vegetables_day_icon.png')}
+                                                        resizeMode="contain"
+                                                    />
+                                                ) : null}
+                                            </View>
                                             <Text style={styles.dateText}>
                                                 {i18n.locale == "en" ? globalData.guj_month_english_name : i18n.locale == "gu" ? globalData.guj_month_gujarati_name : globalData.guj_month_hindi_name} {" "}{i18n.t(`date.${globalData.paksha_type?.toLowerCase()}`)} {" "}{convertDigitsOnly(globalData.tithi, i18n.locale)}
                                             </Text>
@@ -1286,18 +1296,26 @@ const styles = StyleSheet.create({
     timingsHeader: {
         backgroundColor: 'rgba(128, 0, 0, 0.9)',
         flexDirection: 'row',
-        justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 10,
+        // marginVertical: 15,
     },
     todayText: {
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
     },
+    middleImage: {
+        width: 28,
+        height: 28,
+        marginHorizontal: 8,
+        // tintColor: '#fff',
+    },
     dateText: {
         color: 'white',
         fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 'auto',
     },
     godContainer: {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
