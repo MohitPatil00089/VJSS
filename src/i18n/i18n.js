@@ -2,6 +2,10 @@ import { I18n } from 'i18n-js';
 import en from './en.json';
 import hi from './hi.json';
 import gu from './gu.json';
+import moment from 'moment';
+import 'moment/locale/en-gb';   // English
+import 'moment/locale/hi';      // Hindi
+import 'moment/locale/gu';      // Gujarati
 
 // Initialize i18n
 const i18n = new I18n({
@@ -24,6 +28,7 @@ i18n.defaultSeparator = '.';
 
 export const changeLanguage = (languageKey) => {
     i18n.locale = languageKey;
+    moment.locale(languageKey);
 };
 
 export const getCurrentLanguage = () => i18n.locale;

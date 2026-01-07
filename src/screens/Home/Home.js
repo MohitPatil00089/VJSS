@@ -78,7 +78,7 @@ const getTimingColor = (timingName) => {
     return colorMap[timingName] || '#A9A9A9';
 };
 
-const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex }) => {
+const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, choghadiyaActiveTab }) => {
     const currentChoghadiya = choghadiya.day.find((item, index) => index === activeIndex);
     const toMinutes = (time) => {
         const [h, m] = time.split(':').map(Number);
@@ -247,7 +247,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
             if (aStart == null || aEnd == null) return;
             const pStart = angleToPoint(aStart, outerRadius);
             const pEnd = angleToPoint(aEnd, outerRadius);
-            const color = index % 2 === 1 ? '#ff8e34' : '#424242';
+            const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
             borderSegments.push(
                 <Path
                     key={`border-${index}`}
@@ -260,6 +260,53 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
             );
         });
     }
+    // const list = choghadiyaActiveTab === 'sun' ? choghadiya?.day || []
+    //     : choghadiya?.night || [];
+    // if (list.length && daylightStartMin != null && daylightEndMin != null) {
+    //     list.forEach((item, idx) => {
+    //         const { start, end } = rangeToMinutes(item.time);
+    //         const s = Math.max(start, daylightStartMin);
+    //         const e = Math.min(end, daylightEndMin);
+    //         if (e <= s) return;
+    //         const aStart = angleFromMinute(s);
+    //         const aEnd = angleFromMinute(e);
+    //         if (aStart == null || aEnd == null) return;
+    //         const pStart = angleToPoint(aStart, outerRadius);
+    //         const pEnd = angleToPoint(aEnd, outerRadius);
+    //         const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
+    //         borderSegments.push(
+    //             <Path
+    //                 key={`border-${choghadiyaActiveTab}-${idx}`}
+    //                 d={`M ${pStart.x} ${pStart.y} A ${outerRadius} ${outerRadius} 0 0 1 ${pEnd.x} ${pEnd.y}`}
+    //                 fill="none"
+    //                 stroke={color}
+    //                 strokeWidth={8}
+    //                 strokeLinecap="square"
+    //             />
+    //         );
+    //     });
+    // }
+    // else {
+    //     list.forEach((item, idx) => {
+    //         const { start, end } = rangeToMinutes(item.time);
+    //         const aStart = angleFromMinute(start);
+    //         const aEnd = angleFromMinute(end);
+    //         if (aStart == null || aEnd == null) return;
+    //         const pStart = angleToPoint(aStart, outerRadius);
+    //         const pEnd = angleToPoint(aEnd, outerRadius);
+    //         const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
+    //         borderSegments.push(
+    //             <Path
+    //                 key={`border-${choghadiyaActiveTab}-${idx}`}
+    //                 d={`M ${pStart.x} ${pStart.y} A ${outerRadius} ${outerRadius} 0 0 1 ${pEnd.x} ${pEnd.y}`}
+    //                 fill="none"
+    //                 stroke={color}
+    //                 strokeWidth={8}
+    //                 strokeLinecap="square"
+    //             />
+    //         );
+    //     });
+    // }
 
     const dottedRadius = outerRadius + 12;
     const now = new Date();
@@ -318,7 +365,9 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                         style={[
                             styles.timingDot,
                             {
-                                backgroundColor: activeIndex % 2 === 1 ? '#ff8e34' : 'gray',
+                                backgroundColor: /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(currentChoghadiya?.name || '')
+                                    ? '#FF8C00'
+                                    : '#424242',
                             },
                         ]}
                     />
@@ -380,6 +429,21 @@ const Home = ({ route, navigation }) => {
         isPurnima: false
     });
 
+    // const [tick, setTick] = useState(0);
+
+    // /* 1.  one-second ticker */
+    // useEffect(() => {
+    //     const id = setInterval(() => setTick(t => t + 1), 60_000); // 60 s
+    //     return () => clearInterval(id);
+    // }, []);
+
+    // /* 2.  when the local day changes, re-fetch */
+    // useEffect(() => {
+    //     const now = new Date();
+    //     if (!moment(now).isSame(selectedDate, 'day')) {
+    //         setSelectedDate(now);          // this triggers the existing useEffect
+    //     }
+    // }, [tick]);
 
     const [godName, setGodName] = useState('');
     const [kalyanakName, setKalyanakName] = useState('');
@@ -470,87 +534,110 @@ const Home = ({ route, navigation }) => {
     const getDashboardDataWithTiming = async (date) => {
         try {
             setLoading(true);
-            const selectedCityStr = await AsyncStorage.getItem('selectedCity');
-            const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
-                lat: '22.2726554',
-                long: '73.1969701',
-                country_code: 'IN'
-            };
 
+            /* ----------  city ---------- */
+            const selectedCityStr = await AsyncStorage.getItem('selectedCity');
+            const selectedCity = selectedCityStr
+                ? JSON.parse(selectedCityStr)
+                : {
+                    lat: '22.2726554',
+                    long: '73.1969701',
+                    country_code: 'IN',
+                };
+
+            /* ----------  date parts ---------- */
             const day = date.getDate();
             const year = date.getFullYear().toString();
             const month = String(date.getMonth() + 1).padStart(2, '0');
 
-            const response = await getDashboardData(
-                globalData.day_name || 'Monday',
-                day,
-                year,
+            /* ----------  payload ---------- */
+            const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+            const payload = {
+                week_name: weekday,
+                type: 'Day',
+                latitude: selectedCity.lat.toString(),
+                longitude: selectedCity.long.toString(),
+                country_code: selectedCity.country_code,
+                day: day.toString(),
                 month,
-                selectedCity.lat.toString(),
-                selectedCity.long.toString(),
-                selectedCity.country_code,
+                year,
+            };
+
+            /* ----  log what we are about to send  ---- */
+            console.log('API payload ➜', JSON.stringify(payload, null, 2));
+
+            /* ----------  API call ---------- */
+            const response = await getDashboardData(
+                payload.week_name,
+                payload.day,
+                payload.year,
+                payload.month,
+                payload.latitude,
+                payload.longitude,
+                payload.country_code,
             );
 
+            /* ----------  handle response ---------- */
             if (response?.data) {
+                /* 1.  choghadiya */
                 const choghadiya = response.data ? convertChoghadiya(response.data) : { day: [], night: [] };
-                await setChoghadiyaData(choghadiya);
+                setChoghadiyaData(choghadiya);
 
+                console.log('Fresh choghadiyaData set ➜', choghadiya);
+
+                /* 2.  timing array + active index */
                 if (response?.timedata?.data) {
-                    const timingArray = await processTimingData(response.timedata.data, i18n.locale);
+                    const timingArray = processTimingData(response.timedata.data, i18n.locale);
                     const activeIndex = getCurrentTimingIndex(timingArray);
-                    const finalTimingData = timingArray.map((item, index) => ({
+                    const finalTimingData = timingArray.map((item, idx) => ({
                         ...item,
-                        isActive: index === activeIndex,
+                        isActive: idx === activeIndex,
                     }));
+                    setTimingData(finalTimingData);
 
-                    await setTimingData(finalTimingData);
+                    /* sunrise / sunset for chart header */
                     const englishTimings = response.timedata.data.english || {};
                     setSunTimes({
                         sunrise: englishTimings.Sunrise || '--:--',
-                        sunset: englishTimings.Sunset || '--:--'
+                        sunset: englishTimings.Sunset || '--:--',
                     });
                 } else {
                     setTimingData([]);
-                    setSunTimes({
-                        sunrise: '--:--',
-                        sunset: '--:--'
-                    });
+                    setSunTimes({ sunrise: '--:--', sunset: '--:--' });
                 }
 
-
+                /* 3.  kalyanak / god name */
                 if (response?.day_kalyanak_god) {
-                    const godData = response.day_kalyanak_god;
-                    const dynamicGodName = i18n.locale === 'gu' ? godData.gu_god_name
-                        : i18n.locale === 'hi' ? godData.hi_god_name
-                            : godData.en_god_name;
-                    const dynamicKalyanakName = i18n.locale === 'gu' ? godData.gu_kalyanak_name
-                        : i18n.locale === 'hi' ? godData.hi_kalyanak_name
-                            : godData.en_kalyanak_name;
-
-                    setGodName(dynamicGodName || '');
-                    setKalyanakName(dynamicKalyanakName || '');
+                    const god = response.day_kalyanak_god;
+                    const godName =
+                        i18n.locale === 'gu' ? god.gu_god_name
+                            : i18n.locale === 'hi' ? god.hi_god_name
+                                : god.en_god_name;
+                    const kalyanakName =
+                        i18n.locale === 'gu' ? god.gu_kalyanak_name
+                            : i18n.locale === 'hi' ? god.hi_kalyanak_name
+                                : god.en_kalyanak_name;
+                    setGodName(godName || '');
+                    setKalyanakName(kalyanakName || '');
                 }
 
+                /* 4.  raw dashboard data (if you need it elsewhere) */
                 setDashboardData(response.data || {});
             } else {
+                /* empty state */
                 setChoghadiyaData({ day: [], night: [] });
                 setTimingData([]);
-                setSunTimes({
-                    sunrise: '--:--',
-                    sunset: '--:--'
-                });
+                setSunTimes({ sunrise: '--:--', sunset: '--:--' });
                 setGodName('');
                 setKalyanakName('');
                 setDashboardData({});
             }
         } catch (error) {
             console.error('Error in getDashboardDataWithTiming:', error);
+            /* fallback empty state */
             setChoghadiyaData({ day: [], night: [] });
             setTimingData([]);
-            setSunTimes({
-                sunrise: '--:--',
-                sunset: '--:--'
-            });
+            setSunTimes({ sunrise: '--:--', sunset: '--:--' });
             setGodName('');
             setKalyanakName('');
         } finally {
@@ -655,6 +742,7 @@ const Home = ({ route, navigation }) => {
             await AsyncStorage.setItem('userLanguage', language);
             i18n.locale = language;
             setCurrentLanguage(language);
+            moment.locale(language);
             await getGlobalData(selectedDate);
             setShowLanguageModal(false);
         } catch (error) {
@@ -733,6 +821,8 @@ const Home = ({ route, navigation }) => {
             } else if (item?.name == "Purimaddha" || item?.name == "पुरिमड्ढ" || item?.name == "પુરિમડ્ઢ") {
                 return event.id == "aYOxlpzRMwrX3gD7";
             } else if (item?.name == "Avaddha" || item?.name == "अवड्ढ" || item?.name == "અવધ") {
+                return event.id == "aYOxlpzRMwrX3gD7";
+            } else if (item?.name == "Chovihar" || item?.name == "चौविहार" || item?.name == "ચોવિહાર") {
                 return event.id == "aYOxlpzRMwrX3gD7";
             }
             else {
@@ -862,7 +952,7 @@ const Home = ({ route, navigation }) => {
                                     contentContainerStyle={[styles.content, styles.scrollContent]}
                                     showsVerticalScrollIndicator={false}
                                 >
-                                    <Chart data={sunTimes} timingData={timingData} choghadiya={choghadiyaData} activeIndex={activeIndex} />
+                                    <Chart data={sunTimes} timingData={timingData} choghadiya={choghadiyaData} activeIndex={activeIndex} choghadiyaActiveTab={choghadiyaActiveTab} />
 
                                     <View style={styles.tabs}>
                                         <TouchableOpacity
@@ -955,6 +1045,7 @@ const Home = ({ route, navigation }) => {
                                                     ? choghadiyaData.day
                                                     : choghadiyaData.night
                                                 ).map((item, index) => (
+                                                    console.log("choghadiyaData", choghadiyaData),
                                                     <View key={item.id} style={styles.choghadityaYimingItem}>
 
                                                         <View
@@ -994,7 +1085,7 @@ const Home = ({ route, navigation }) => {
                                             <Text style={styles.todayText}>
                                                 {moment(selectedDate).isSame(moment(), 'day')
                                                     ? i18n.t('date.today')
-                                                    : moment(selectedDate).format('DD MMMM YYYY')}
+                                                    : moment(selectedDate).format('ddd, DD MMM YYYY')}
                                             </Text>
                                             <View style={{ flex: 1, alignItems: 'center' }}>
                                                 {globalData.tithi === '8' || globalData.tithi === '14' || (globalData.tithi === '5' &&
