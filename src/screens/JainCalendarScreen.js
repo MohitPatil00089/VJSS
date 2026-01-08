@@ -7,7 +7,8 @@ import {
     FlatList,
     TouchableOpacity,
     ActivityIndicator,
-    ScrollView
+    ScrollView,
+    Image,
 } from 'react-native';
 import { getCalendarData, getEventsForDate } from '../database/database';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -37,7 +38,13 @@ const JainCalendarScreen = ({ navigation }) => {
         loadMonthData(currentMonth);
     }, []);
 
+const navigateToToday = () => {
+            const today = new Date().toISOString().split('T')[0];
 
+            navigation.navigate('Home', {
+                selectedDate: today,
+            });
+        };
 
     const loadMonthData = async (date) => {
         try {
@@ -269,6 +276,35 @@ const JainCalendarScreen = ({ navigation }) => {
                 scrollEnabled={false}
                 contentContainerStyle={styles.calendarGrid}
             />
+
+            <View style={styles.bottomBar}>
+                <TouchableOpacity
+                    style={styles.legendItem}
+                    onPress={navigateToToday}
+                    activeOpacity={0.7}
+                >
+                    <View style={[styles.smalldot, { backgroundColor: '#FF6B35' }]} />
+                    <Text style={styles.legendText}>{i18n.t('jainCalendar.today')}</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.bottomBar}>
+                {/* Tithi */}
+                <View style={styles.legendItem}>
+                    <View style={[styles.smalldot, { backgroundColor: '#48bf4cff' }]} />
+                    <Text style={styles.legendText}>{i18n.t('jainCalendar.tithi')}</Text>
+                </View>
+
+                {/* Shubh */}
+                <View style={styles.legendItem}>
+                    <Image
+                        source={require('../assets/shubh.png')}
+                        style={styles.shubhImage}
+                        resizeMode="contain"
+                    />
+                    <Text style={styles.legendText}>{i18n.t('jainCalendar.shubh_day')}</Text>
+                </View>
+            </View>
             {/* Bottom Tab Bar */}
             {/* <View style={styles.bottomTabBar}>
                 <TouchableOpacity
@@ -371,7 +407,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: '#9E1B17',
-        paddingVertical: 15,
+        // paddingVertical: 15,
         paddingHorizontal: 15,
     },
     backButton: {
@@ -585,6 +621,36 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#999',
         textAlign: 'center',
+    },
+    bottomBar: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderColor: '#E5E5E5',
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        justifyContent: 'space-around',
+    },
+    smalldot: {
+        width: 20,
+        height: 20,
+        borderRadius: 50,
+        backgroundColor: '#ee0909ff',
+    },
+    legendItem: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    legendText: {
+        fontSize: 12,
+        marginTop: 4,
+        color: '#333',
+    },
+
+    shubhImage: {
+        width: 20,
+        height: 20,
     },
     // bottomTabBar: {
     //     flexDirection: 'row',

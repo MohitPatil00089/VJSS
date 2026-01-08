@@ -78,7 +78,7 @@ const getTimingColor = (timingName) => {
     return colorMap[timingName] || '#A9A9A9';
 };
 
-const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, choghadiyaActiveTab }) => {
+const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, selectedDate, choghadiyaActiveTab }) => {
     const toMinutes = (time) => {
         const [h, m] = time.split(':').map(Number);
         return h * 60 + m;
@@ -100,7 +100,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
         return { start: toMin(start), end: toMin(end) };
     };
 
-    // Get sunset time
+        // Get sunset time
     const sunsetTime =
         timingData.find(item => item.name === 'सूर्यास्त' || item.name === 'સૂર્યાસ્ત' || item.name === 'sunset')?.time;
 
@@ -263,8 +263,56 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
             );
         });
     }
+    // const list = choghadiyaActiveTab === 'sun' ? choghadiya?.day || []
+    //     : choghadiya?.night || [];
+    // if (list.length && daylightStartMin != null && daylightEndMin != null) {
+    //     list.forEach((item, idx) => {
+    //         const { start, end } = rangeToMinutes(item.time);
+    //         const s = Math.max(start, daylightStartMin);
+    //         const e = Math.min(end, daylightEndMin);
+    //         if (e <= s) return;
+    //         const aStart = angleFromMinute(s);
+    //         const aEnd = angleFromMinute(e);
+    //         if (aStart == null || aEnd == null) return;
+    //         const pStart = angleToPoint(aStart, outerRadius);
+    //         const pEnd = angleToPoint(aEnd, outerRadius);
+    //         const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
+    //         borderSegments.push(
+    //             <Path
+    //                 key={`border-${choghadiyaActiveTab}-${idx}`}
+    //                 d={`M ${pStart.x} ${pStart.y} A ${outerRadius} ${outerRadius} 0 0 1 ${pEnd.x} ${pEnd.y}`}
+    //                 fill="none"
+    //                 stroke={color}
+    //                 strokeWidth={8}
+    //                 strokeLinecap="square"
+    //             />
+    //         );
+    //     });
+    // }
+    // else {
+    //     list.forEach((item, idx) => {
+    //         const { start, end } = rangeToMinutes(item.time);
+    //         const aStart = angleFromMinute(start);
+    //         const aEnd = angleFromMinute(end);
+    //         if (aStart == null || aEnd == null) return;
+    //         const pStart = angleToPoint(aStart, outerRadius);
+    //         const pEnd = angleToPoint(aEnd, outerRadius);
+    //         const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
+    //         borderSegments.push(
+    //             <Path
+    //                 key={`border-${choghadiyaActiveTab}-${idx}`}
+    //                 d={`M ${pStart.x} ${pStart.y} A ${outerRadius} ${outerRadius} 0 0 1 ${pEnd.x} ${pEnd.y}`}
+    //                 fill="none"
+    //                 stroke={color}
+    //                 strokeWidth={8}
+    //                 strokeLinecap="square"
+    //             />
+    //         );
+    //     });
+    // }
 
     const dottedRadius = outerRadius + 12;
+    const isToday = selectedDate && moment(selectedDate).isSame(moment(), 'day');
 
     // Calculate position for the icon on dotted line
     let iconPos = null;
@@ -337,7 +385,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                     />
                 </Svg>
 
-                {iconPos && (
+                {iconPos && isToday && (
                     <View style={{
                         position: 'absolute',
                         left: iconPos.x - 10,
@@ -372,27 +420,27 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                     </View>}
 
                 {/* CENTER: Current Choghadiya */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <View
-                        style={[
-                            styles.timingDot,
-                            {
-                                backgroundColor: /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(currentChoghadiya?.name || '')
-                                    ? '#FF8C00'
-                                    : '#424242',
-                            },
-                        ]}
-                    />
+                {isToday && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <View
+                            style={[
+                                styles.timingDot,
+                                {
+                                    backgroundColor: /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચल|labh|लाभ|લાભ/i.test(currentChoghadiya?.name || '')
+                                        ? '#FF8C00'
+                                        : '#424242',
+                                },
+                            ]}
+                        />
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold', opacity: 0.8 }}>
-                            {currentChoghadiya?.name}
-                        </Text>
-                        <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold', opacity: 0.8 }}>
-                            {formatTime(currentChoghadiya?.time, i18n.locale)}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold', opacity: 0.8 }}>{currentChoghadiya?.name}</Text>
+                            <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold', opacity: 0.8 }}>
+                                {formatTime(currentChoghadiya?.time, i18n.locale)}
+                            </Text>
+                        </View>
                     </View>
-                </View>
+                )}
 
                 {/* RIGHT SIDE: Sunrise/Sun */}
                 {!isDaytime ?
@@ -449,6 +497,8 @@ const Home = ({ route, navigation }) => {
         isAmavasya: false,
         isPurnima: false
     });
+
+    const isToday = selectedDate && moment(selectedDate).isSame(moment(), 'day');
 
     // const [tick, setTick] = useState(0);
 
@@ -973,7 +1023,7 @@ const Home = ({ route, navigation }) => {
                                     contentContainerStyle={[styles.content, styles.scrollContent]}
                                     showsVerticalScrollIndicator={false}
                                 >
-                                    <Chart data={sunTimes} timingData={timingData} choghadiya={choghadiyaData} activeIndex={activeIndex} choghadiyaActiveTab={choghadiyaActiveTab} />
+                                    <Chart data={sunTimes} timingData={timingData} choghadiya={choghadiyaData} activeIndex={activeIndex} choghadiyaActiveTab={choghadiyaActiveTab} selectedDate={selectedDate} />
 
                                     <View style={styles.tabs}>
                                         <TouchableOpacity
@@ -1018,7 +1068,7 @@ const Home = ({ route, navigation }) => {
                                                                     backgroundColor: item.color
                                                                 }
                                                             ]} >
-                                                                {item.isActive && <View style={styles.innerWhiteDot} />}
+                                                                {item.isActive && isToday && <View style={styles.innerWhiteDot} />}
                                                             </View>
                                                             <View style={styles.timingTextContainer}>
                                                                 <Text style={styles.timingName}>{item.name}:</Text>
@@ -1042,7 +1092,7 @@ const Home = ({ route, navigation }) => {
                                                                     backgroundColor: item.color
                                                                 }
                                                             ]} >
-                                                                {item.isActive && <View style={styles.innerWhiteDot} />}
+                                                                {item.isActive && isToday && <View style={styles.innerWhiteDot} />}
                                                             </View>
                                                             <View style={styles.timingTextContainer}>
                                                                 <Text style={styles.timingName}>{item.name}:</Text>
@@ -1075,7 +1125,7 @@ const Home = ({ route, navigation }) => {
                                                                 { backgroundColor: getChoghadiyaDotColor(item.name) },
                                                             ]}
                                                         >
-                                                            {index === activeIndex && (
+                                                            {index === activeIndex && isToday && (
                                                                 <View style={styles.innerWhiteDot} />
                                                             )}
                                                         </View>

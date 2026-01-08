@@ -6,7 +6,8 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     ScrollView,
-    SectionList
+    SectionList,
+    Image
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -459,7 +460,11 @@ const TithisInMonth = ({ navigation }) => {
                                     onPress={() => handleCardPress(item.dateString)}
                                 >
                                     <View style={styles.cardContent}>
-                                        <View style={styles.greenDot} />
+                                        <Image
+                                                                source={require('../assets/shubh.png')}
+                                                                style={styles.shubhImage}
+                                                                resizeMode="contain"
+                                                            />
                                         <View style={styles.cardText}>
                                             <Text style={styles.shubhDayMainText}>
                                                 {item.gujMonth} {item.paksha} {item.tithiNumber}
@@ -652,6 +657,10 @@ const styles = StyleSheet.create({
         height: 10,
         borderRadius: 5,
         backgroundColor: '#4CAF50',
+    },
+    shubhImage: {
+        width: 20,
+        height: 20,
     },
     rightArrow: {
         marginLeft: 8,

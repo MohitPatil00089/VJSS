@@ -21,7 +21,11 @@
     "pachakkhan": "Pachakkhan",
     "choghadiya": "Choghadiya"
   },
-  
+  "jainCalendar": {
+    "today": "Today",
+    "tithi": "Tithi",
+    "shubh_day": "Shubh Day"
+  },  
    "tirthankarNames": {
     "Shree Adinath Bhagwan": "Shree Adinath Bhagwan",
     "Shree Aadinath": "Shree Aadinath Bhagwan",
