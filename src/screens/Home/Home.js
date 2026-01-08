@@ -355,13 +355,21 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
 
             <View style={styles.sunMoonContainer}>
                 {/* LEFT SIDE: Sunset/Moon */}
-                <View style={styles.timeContainer}>
-                    <Icon name="moon" size={20} color="#87CEEB" />
-                    <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
-                    <Text style={styles.timeText}>
-                        {formatTime(sunTimes?.sunset, i18n.locale)}
-                    </Text>
-                </View>
+                {isDaytime ?
+                    <View style={styles.timeContainer}>
+                        <Icon name="sunny" size={20} color="#FFD700" />
+                        <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
+                        <Text style={styles.timeText}>
+                            {formatTime(sunTimes?.sunrise, i18n.locale)}
+                        </Text>
+                    </View> :
+                    <View style={styles.timeContainer}>
+                        <Icon name="moon" size={20} color="#87CEEB" />
+                        <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
+                        <Text style={styles.timeText}>
+                            {formatTime(sunTimes?.sunset, i18n.locale)}
+                        </Text>
+                    </View>}
 
                 {/* CENTER: Current Choghadiya */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -387,13 +395,21 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                 </View>
 
                 {/* RIGHT SIDE: Sunrise/Sun */}
-                <View style={styles.timeContainer}>
-                    <Icon name="sunny" size={20} color="#FFD700" />
-                    <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
-                    <Text style={styles.timeText}>
-                        {formatTime(sunTimes?.sunrise, i18n.locale)}
-                    </Text>
-                </View>
+                {!isDaytime ?
+                    <View style={styles.timeContainer}>
+                        <Icon name="sunny" size={20} color="#FFD700" />
+                        <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
+                        <Text style={styles.timeText}>
+                            {formatTime(sunTimes?.sunrise, i18n.locale)}
+                        </Text>
+                    </View> :
+                    <View style={styles.timeContainer}>
+                        <Icon name="moon" size={20} color="#87CEEB" />
+                        <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
+                        <Text style={styles.timeText}>
+                            {formatTime(sunTimes?.sunset, i18n.locale)}
+                        </Text>
+                    </View>}
             </View>
         </View>
     );
