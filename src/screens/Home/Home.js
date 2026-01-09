@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -22,15 +22,13 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Fontisto from 'react-native-vector-icons/Fontisto';
-import Svg, { Circle, Path, G, Text as SvgText, Defs, Mask } from 'react-native-svg';
-import i18n, { changeLanguage, getCurrentLanguage } from '../../i18n/i18n';
+import Svg, { Path, G, Text as SvgText, Defs, Mask } from 'react-native-svg';
+import i18n, { changeLanguage } from '../../i18n/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { convertDigitsOnly, convertNumber, formatJainDate, formatTime } from '../../utils/numberConverter';
-import { getCurrentTimings } from '../../utils/timingCalculator';
-import { getCalendarData, initDatabase } from '../../database/database';
+import { convertDigitsOnly, formatTime } from '../../utils/numberConverter';
 import moment from 'moment-timezone';
-import importAllData from '../../database/importData';
 import { getAllLocations, getFrontDashboardData, getDashboardData, getThemeSettings, getFrontPanchakhan } from '../../component/global';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const IMAGE_SCALE = 1.4;
@@ -52,27 +50,27 @@ const getDurationInMinutes = (timeRange) => {
 };
 const getTimingColor = (timingName) => {
     const colorMap = {
-        'Sunrise': '#FF8C00',
-        'Navkarshi': '#FFD700',
-        'Porisi': '#32CD32',
-        'Saddha-Porisi': '#1E90FF',
-        'Purimaddha': '#9370DB',
-        'Avaddha': '#FF6347',
-        'Sunset': '#FF4500',
-        'सूर्योदय': '#FF8C00',
-        'नवकारशी': '#FFD700',
-        'पोरिसी': '#32CD32',
-        'साड्ढ-पोरिसिं': '#1E90FF',
-        'पुरिमड्ढ': '#9370DB',
-        'अवड्ढ': '#FF6347',
-        'सूर्यास्त': '#FF4500',
-        'સૂર્યોદય': '#FF8C00',
-        'નવકારશી': '#FFD700',
-        'પોરિસિં': '#32CD32',
-        'સાડ્ઢપોરિસિં': '#1E90FF',
-        'પુરિમડ્ઢ': '#9370DB',
-        'અવધ': '#FF6347',
-        'સૂર્યાસ્ત': '#FF4500'
+        'Sunrise': '#FF9500',
+        'Navkarshi': '#FFCC00',
+        'Porisi': '#00E676',
+        'Saddha-Porisi': '#2979FF',
+        'Purimaddha': '#D500F9',
+        'Avaddha': '#FF3D00',
+        'Sunset': '#FF1744',
+        'सूर्योदय': '#FF9500',
+        'नवकारशी': '#FFCC00',
+        'पोरिसी': '#00E676',
+        'साड्ढ-पोरिसिं': '#2979FF',
+        'पुरिमड्ढ': '#D500F9',
+        'अवड्ढ': '#FF3D00',
+        'सूर्यास्त': '#FF1744',
+        'સૂર્યોદય': '#FF9500',
+        'નવકારશી': '#FFCC00',
+        'પોરિસિં': '#00E676',
+        'સાડ્ઢપોરિસિં': '#2979FF',
+        'પુરિમડ્ઢ': '#D500F9',
+        'અવધ': '#FF3D00',
+        'સૂર્યાસ્ત': '#FF1744'
     };
 
     return colorMap[timingName] || '#A9A9A9';
@@ -80,32 +78,45 @@ const getTimingColor = (timingName) => {
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, selectedDate, choghadiyaActiveTab }) => {
+    const isFocused = useIsFocused();
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const iconAnim = useRef(new Animated.Value(0)).current;
+    const animationRef = useRef(null);
 
     useEffect(() => {
-        fadeAnim.setValue(0);
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: false,
-            easing: Easing.out(Easing.cubic),
-        }).start();
-    }, [choghadiya, activeIndex]);
+        if (!isFocused) {
+            fadeAnim.setValue(0);
+            iconAnim.setValue(0);
+            return;
+        }
 
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
         fadeAnim.setValue(0);
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: false,
-            easing: Easing.out(Easing.cubic),
-        }).start();
-    }, [choghadiya, activeIndex]);
+        iconAnim.setValue(0);
+        const animation = Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 4000,
+                useNativeDriver: false,
+                easing: Easing.inOut(Easing.cubic),
+            }),
+            Animated.timing(iconAnim, {
+                toValue: 1,
+                duration: 5500,
+                useNativeDriver: true,
+                easing: Easing.inOut(Easing.cubic),
+            }),
+        ]);
+        animationRef.current = animation;
+        animation.start();
+
+        return () => {
+            animation.stop();
+        };
+    }, [choghadiya, activeIndex, isFocused]);
+
+    if (!isFocused) return null;
 
     const toMinutes = (time) => {
         const [h, m] = time.split(':').map(Number);
@@ -166,8 +177,8 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                 label: item.name,
                 value,
                 color: isEdge
-                    ? hexToRgba(item.color, 0.3)
-                    : hexToRgba(item.color, 0.5),
+                    ? hexToRgba(item.color, 0.6)
+                    : hexToRgba(item.color, 0.8),
                 time: item.time,
             };
         })
@@ -184,7 +195,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
 
     const midRadius = outerRadius / 2;
     const arcLength = Math.PI * midRadius;
-    const maskStrokeWidth = outerRadius;
+    const maskStrokeWidth = outerRadius + 50;
     const maskPath = `M ${centerX - midRadius} ${centerY} A ${midRadius} ${midRadius} 0 0 1 ${centerX + midRadius} ${centerY}`;
 
     const strokeDashoffset = fadeAnim.interpolate({
@@ -354,12 +365,14 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
 
     // Calculate position for the icon on dotted line
     let iconPos = null;
+    let iconAngle = null;
 
     if (daylightStartMin != null && daylightEndMin != null) {
         if (isDaytime) {
             // During daytime: sun moves along the arc from sunrise to sunset
             const nowAngle = angleFromMinute(nowMinutes);
             if (nowAngle != null) {
+                iconAngle = nowAngle;
                 iconPos = angleToPoint(nowAngle, dottedRadius);
             }
         } else {
@@ -389,10 +402,36 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                 const nightRatio = Math.min(timeSinceSunset / nightDuration, 1);
                 // Start at 180° (sunset position) and move toward 0° (sunrise position)
                 const nightAngle = 180 - (nightRatio * 180);
+                iconAngle = nightAngle;
                 iconPos = angleToPoint(nightAngle, dottedRadius);
             }
         }
     }
+
+    // Calculate rotation interpolation for the icon
+    let rotateInputRange = [0, 1];
+    let rotateOutputRange = ['0deg', '0deg'];
+
+    if (iconAngle != null) {
+        const finalRotation = 180 - iconAngle;
+        const stopProgress = finalRotation / 180;
+
+        if (stopProgress >= 0.99) {
+            rotateInputRange = [0, 1];
+            rotateOutputRange = ['0deg', `${finalRotation}deg`];
+        } else if (stopProgress <= 0.01) {
+            rotateInputRange = [0, 1];
+            rotateOutputRange = ['0deg', '0deg'];
+        } else {
+            rotateInputRange = [0, stopProgress, 1];
+            rotateOutputRange = ['0deg', `${finalRotation}deg`, `${finalRotation}deg`];
+        }
+    }
+
+    const rotateAnim = iconAnim.interpolate({
+        inputRange: rotateInputRange,
+        outputRange: rotateOutputRange
+    });
 
     return (
         <View style={[styles.chartContainer, { height: chartHeight }]}>
@@ -425,25 +464,33 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                         {segments}
 
                         {borderSegments}
-                    </G>
 
-                    <Path
-                        d={`M ${centerX - dottedRadius} ${centerY}
-                    A ${dottedRadius} ${dottedRadius} 0 0 1 ${centerX + dottedRadius} ${centerY}`}
-                        fill="none"
-                        stroke="#FFFFFF"
-                        strokeOpacity={0.9}
-                        strokeWidth={1}
-                        strokeDasharray="3,4"
-                        strokeLinecap="square"
-                    />
+                        <Path
+                            d={`M ${centerX - dottedRadius} ${centerY}
+                        A ${dottedRadius} ${dottedRadius} 0 0 1 ${centerX + dottedRadius} ${centerY}`}
+                            fill="none"
+                            stroke="#FFFFFF"
+                            strokeOpacity={0.9}
+                            strokeWidth={1}
+                            strokeDasharray="3,4"
+                            strokeLinecap="square"
+                        />
+                    </G>
                 </Svg>
 
                 {iconPos && isToday && (
-                    <View style={{
+                    <Animated.View style={{
                         position: 'absolute',
-                        left: iconPos.x - 10,
-                        top: iconPos.y - 10,
+                        left: centerX - 10,
+                        top: centerY - 10,
+                        width: 20,
+                        height: 20,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        transform: [
+                            { rotate: rotateAnim },
+                            { translateX: -dottedRadius }
+                        ]
                     }}>
                         {/* Dynamic icon based on day/night */}
                         <Icon
@@ -451,7 +498,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                             size={20}
                             color={isDaytime ? "#fff" : "#fff"}
                         />
-                    </View>
+                    </Animated.View>
                 )}
             </View>
 
@@ -518,6 +565,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
 };
 
 const Home = ({ route, navigation }) => {
+    const isFocused = useIsFocused();
     const [loading, setLoading] = useState(true);
     const [language, setLanguage] = useState(i18n.locale);
     const [activeTab, setActiveTab] = useState('pachakkhan');
@@ -780,7 +828,9 @@ const Home = ({ route, navigation }) => {
     ).current;
 
     useEffect(() => {
-        Animated.loop(
+        if (!isFocused) return;
+
+        const animation = Animated.loop(
             Animated.sequence([
                 Animated.timing(translate, {
                     toValue: { x: endX, y: endY },
@@ -795,8 +845,13 @@ const Home = ({ route, navigation }) => {
                     useNativeDriver: true,
                 }),
             ])
-        ).start();
-    }, []);
+        );
+        animation.start();
+
+        return () => {
+            animation.stop();
+        };
+    }, [isFocused]);
 
 
     useEffect(() => {
@@ -1017,16 +1072,18 @@ const Home = ({ route, navigation }) => {
             style={styles.backgroundImage}
             resizeMode="center"
         >
-            <Animated.Image
-                source={require('../../assets/home_background.jpeg')}
-                resizeMode="cover"
-                style={[
-                    styles.repeatBg,
-                    {
-                        transform: translate.getTranslateTransform(),
-                    },
-                ]}
-            />
+            {isFocused && (
+                <Animated.Image
+                    source={require('../../assets/home_background.jpeg')}
+                    resizeMode="cover"
+                    style={[
+                        styles.repeatBg,
+                        {
+                            transform: translate.getTranslateTransform(),
+                        },
+                    ]}
+                />
+            )}
 
             <View style={styles.overlay}>
                 <View style={styles.container}>
