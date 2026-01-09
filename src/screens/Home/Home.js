@@ -521,7 +521,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                     </View>}
 
                 {/* CENTER: Current Choghadiya */}
-                {isToday && (
+                {isToday && currentChoghadiya && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         <View
                             style={[

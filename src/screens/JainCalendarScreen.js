@@ -38,13 +38,13 @@ const JainCalendarScreen = ({ navigation }) => {
         loadMonthData(currentMonth);
     }, []);
 
-const navigateToToday = () => {
-            const today = new Date().toISOString().split('T')[0];
+    const navigateToToday = () => {
+        const today = new Date().toISOString().split('T')[0];
 
-            navigation.navigate('Home', {
-                selectedDate: today,
-            });
-        };
+        navigation.navigate('Home', {
+            selectedDate: today,
+        });
+    };
 
     const loadMonthData = async (date) => {
         try {
@@ -276,30 +276,36 @@ const navigateToToday = () => {
                 scrollEnabled={false}
                 contentContainerStyle={styles.calendarGrid}
                 ListFooterComponent={() => (
-        <View>
-            {/* Today */}
-            <View style={styles.bottomBar}>
-                <TouchableOpacity style={styles.legendItem} onPress={navigateToToday} activeOpacity={0.7}>
-                    <View style={[ styles.smalldot, { backgroundColor: '#FF6B35' }, ]} />
-                    <Text style={styles.legendText}>{i18n.t('jainCalendar.today')}</Text>
-                </TouchableOpacity>
-            </View>
+                    <View>
+                        {/* Today */}
+                        <View style={styles.bottomBar}>
+                            <TouchableOpacity
+                                style={[styles.legendItem, styles.todayButtonStyle]}
+                                onPress={navigateToToday}
+                                activeOpacity={0.6}
+                            >
+                                {/* <View style={[styles.smalldot, { backgroundColor: '#FF6B35' }]} /> */}
+                                <Text style={[styles.legendText, styles.todayButtonText]}>
+                                    {i18n.t('jainCalendar.today')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
 
-            {/* Tithi & Shubh */}
-            <View style={styles.bottomBar}>
-                <View style={styles.legendItem}>
-                    <View style={[ styles.smalldot, { backgroundColor: '#48bf4cff' }, ]} />
-                    <Text style={styles.legendText}>{i18n.t('jainCalendar.tithi')}</Text>
-                </View>
+                        {/* Tithi & Shubh */}
+                        <View style={styles.bottomBar}>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.smalldot, { backgroundColor: '#48bf4cff' },]} />
+                                <Text style={styles.legendText}>{i18n.t('jainCalendar.tithi')}</Text>
+                            </View>
 
-                <View style={styles.legendItem}>
-                    <Image source={require('../assets/shubh.png')} style={styles.shubhImage} resizeMode="contain" />
-                    <Text style={styles.legendText}>{i18n.t('jainCalendar.shubh_day')}</Text>
-                </View>
-            </View>
-        </View>
-    )}
-/>
+                            <View style={styles.legendItem}>
+                                <Image source={require('../assets/shubh.png')} style={styles.shubhImage} resizeMode="contain" />
+                                <Text style={styles.legendText}>{i18n.t('jainCalendar.shubh_day')}</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+            />
 
             {/* Bottom Tab Bar */}
             {/* <View style={styles.bottomTabBar}>
@@ -496,12 +502,12 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     selectedCell: {
-        backgroundColor: '#FF6B35',
+        backgroundColor: '#b9b9b9',
         borderRadius: 12,
     },
     todayCell: {
         borderWidth: 2,
-        borderColor: '#FF6B35',
+        borderColor: '#b9b9b9',
         borderRadius: 12,
     },
     tithiHighlightedCell: {
@@ -515,13 +521,13 @@ const styles = StyleSheet.create({
         marginBottom: 1,
     },
     selectedDateText: {
-        color: '#FFFFFF',
+        color: '#000000ff',
     },
     tithiHighlightedText: {
         color: '#FFFFFF',
     },
     todayText: {
-        color: '#FF6B35',
+        color: '#000000ff',
     },
     jainDateSmall: {
         fontSize: 8,
@@ -529,7 +535,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     selectedJainText: {
-        color: '#FFFFFF',
+        color: '#000000ff',
     },
     eventDot: {
         width: 4,
@@ -637,7 +643,34 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-
+    todayButtonStyle: {
+        backgroundColor: '#b9b9b9',
+        paddingVertical: 10,
+        paddingHorizontal: 25,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#b9b9b9',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+    },
+    todayButtonText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#000',
+        marginLeft: 'auto',
+    },
+    smalldot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#ee0909ff',
+    },
     legendText: {
         fontSize: 12,
         marginTop: 4,
