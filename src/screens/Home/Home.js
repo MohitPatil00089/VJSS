@@ -80,10 +80,10 @@ const getTimingColor = (timingName) => {
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
+// const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, selectedDate, choghadiyaActiveTab }) => {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+    // const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         fadeAnim.setValue(0);
@@ -474,7 +474,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                     </View>}
 
                 {/* CENTER: Current Choghadiya */}
-                {isToday && (
+                {isToday && currentChoghadiya && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         <View
                             style={[
