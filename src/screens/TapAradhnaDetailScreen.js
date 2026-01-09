@@ -168,6 +168,9 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                             hindi: item.title.details_hindi,
                             english: item.title.details_english,
                             detail: item.title.details_detail,
+                            details_english: route.params.tapData.details,
+                            details_hindi: route.params.tapData.details_hindi,
+                            details_gujarati: route.params.tapData.details_gujarati,
                             audio: item.title.pachakhan_audio
                         }
                     });
@@ -290,7 +293,7 @@ const styles = StyleSheet.create({
     detailTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#9E1B17',
         marginBottom: 10,
     },
     detailText: {

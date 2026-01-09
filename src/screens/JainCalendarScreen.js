@@ -275,36 +275,32 @@ const navigateToToday = () => {
                 numColumns={7}
                 scrollEnabled={false}
                 contentContainerStyle={styles.calendarGrid}
-            />
-
+                ListFooterComponent={() => (
+        <View>
+            {/* Today */}
             <View style={styles.bottomBar}>
-                <TouchableOpacity
-                    style={styles.legendItem}
-                    onPress={navigateToToday}
-                    activeOpacity={0.7}
-                >
-                    <View style={[styles.smalldot, { backgroundColor: '#FF6B35' }]} />
+                <TouchableOpacity style={styles.legendItem} onPress={navigateToToday} activeOpacity={0.7}>
+                    <View style={[ styles.smalldot, { backgroundColor: '#FF6B35' }, ]} />
                     <Text style={styles.legendText}>{i18n.t('jainCalendar.today')}</Text>
                 </TouchableOpacity>
             </View>
 
+            {/* Tithi & Shubh */}
             <View style={styles.bottomBar}>
-                {/* Tithi */}
                 <View style={styles.legendItem}>
-                    <View style={[styles.smalldot, { backgroundColor: '#48bf4cff' }]} />
+                    <View style={[ styles.smalldot, { backgroundColor: '#48bf4cff' }, ]} />
                     <Text style={styles.legendText}>{i18n.t('jainCalendar.tithi')}</Text>
                 </View>
 
-                {/* Shubh */}
                 <View style={styles.legendItem}>
-                    <Image
-                        source={require('../assets/shubh.png')}
-                        style={styles.shubhImage}
-                        resizeMode="contain"
-                    />
+                    <Image source={require('../assets/shubh.png')} style={styles.shubhImage} resizeMode="contain" />
                     <Text style={styles.legendText}>{i18n.t('jainCalendar.shubh_day')}</Text>
                 </View>
             </View>
+        </View>
+    )}
+/>
+
             {/* Bottom Tab Bar */}
             {/* <View style={styles.bottomTabBar}>
                 <TouchableOpacity
@@ -407,7 +403,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: '#9E1B17',
-        // paddingVertical: 15,
+        paddingVertical: 15,
         paddingHorizontal: 15,
     },
     backButton: {

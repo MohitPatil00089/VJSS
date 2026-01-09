@@ -158,6 +158,9 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
         hindi: '',
         english: '',
         detail: '',
+        details_english: '',
+        details_hindi: '',
+        details_gujarati: '',
         audio: ''
     };
 
@@ -254,6 +257,12 @@ const PachhakkhanDetailScreen = ({ navigation }) => {
                             {selectedContent.detail}
                         </Text>
                     </View> */}
+                    <View style={styles.detailCard}>
+                        <Text style={styles.detailTitle}>{i18n.t(`Detail`)}</Text>
+                        <Text style={styles.detailText}>
+                            {i18n.locale === 'gu' ? content.details_gujarati : i18n.locale === 'hi' ? content.details_hindi : content.details_english}
+                        </Text>
+                    </View>
                 </ScrollView>
             </View>
             <LanguageSelectorModal
@@ -396,6 +405,30 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         color: '#444',
         textAlign: 'left',
+    },
+    detailCard: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 15,
+        marginHorizontal: 5,
+        marginTop: 15,
+        marginBottom: 90,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    detailTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#9E1B17',
+        marginBottom: 10,
+    },
+    detailText: {
+        fontSize: 14,
+        lineHeight: 22,
+        color: '#555',
     },
 });
 

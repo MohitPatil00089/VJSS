@@ -72,7 +72,7 @@ const CitySelectionScreen = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text>Loading cities...</Text>
+        <Text style={styles.loadingText}>Loading cities...</Text>
       </View>
     );
   }
@@ -128,6 +128,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
+    color: "white",
+  },
+  LoadingText: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: 16,
     color: "white",
   },
   searchContainer: {
