@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Fontisto from 'react-native-vector-icons/Fontisto';
-import Svg, { Circle, Path, G, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Path, G, Text as SvgText, Defs, Mask } from 'react-native-svg';
 import i18n, { changeLanguage, getCurrentLanguage } from '../../i18n/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { convertDigitsOnly, convertNumber, formatJainDate, formatTime } from '../../utils/numberConverter';
@@ -78,7 +78,35 @@ const getTimingColor = (timingName) => {
     return colorMap[timingName] || '#A9A9A9';
 };
 
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
 const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, selectedDate, choghadiyaActiveTab }) => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        fadeAnim.setValue(0);
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: false,
+            easing: Easing.out(Easing.cubic),
+        }).start();
+    }, [choghadiya, activeIndex]);
+
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        fadeAnim.setValue(0);
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: false,
+            easing: Easing.out(Easing.cubic),
+        }).start();
+    }, [choghadiya, activeIndex]);
+
     const toMinutes = (time) => {
         const [h, m] = time.split(':').map(Number);
         return h * 60 + m;
@@ -100,7 +128,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
         return { start: toMin(start), end: toMin(end) };
     };
 
-        // Get sunset time
+    // Get sunset time
     const sunsetTime =
         timingData.find(item => item.name === 'सूर्यास्त' || item.name === 'સૂર્યાસ્ત' || item.name === 'sunset')?.time;
 
@@ -153,6 +181,16 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
 
     const outerRadius = CHART_RADIUS * 0.8;
     const innerRadius = CHART_RADIUS * 0.001;
+
+    const midRadius = outerRadius / 2;
+    const arcLength = Math.PI * midRadius;
+    const maskStrokeWidth = outerRadius;
+    const maskPath = `M ${centerX - midRadius} ${centerY} A ${midRadius} ${midRadius} 0 0 1 ${centerX + midRadius} ${centerY}`;
+
+    const strokeDashoffset = fadeAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [arcLength, 0],
+    });
 
     let startAngle = 180;
 
@@ -369,9 +407,25 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                         fill="rgba(255,255,255,0.1)"
                     />
 
-                    {segments}
+                    <Defs>
+                        <Mask id="chartMask">
+                            <AnimatedPath
+                                d={maskPath}
+                                stroke="white"
+                                strokeWidth={maskStrokeWidth}
+                                fill="none"
+                                strokeDasharray={[arcLength, arcLength]}
+                                strokeDashoffset={strokeDashoffset}
+                                strokeLinecap="butt"
+                            />
+                        </Mask>
+                    </Defs>
 
-                    {borderSegments}
+                    <G mask="url(#chartMask)">
+                        {segments}
+
+                        {borderSegments}
+                    </G>
 
                     <Path
                         d={`M ${centerX - dottedRadius} ${centerY}
