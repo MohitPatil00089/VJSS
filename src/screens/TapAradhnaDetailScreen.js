@@ -146,6 +146,8 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
             audio: 'choviharupvaaseveningpachhakkhan'
         },
     };
+
+
     const pachhakkhanData = Array.isArray(pachkkhan)
         ? pachkkhan.map((title, idx) => ({ id: String(idx + 1), title }))
         : [];
@@ -168,9 +170,9 @@ export default function TapAradhnaDetailScreen({ route, navigation }) {
                             hindi: item.title.details_hindi,
                             english: item.title.details_english,
                             detail: item.title.details_detail,
-                            details_english: route.params.tapData.details,
-                            details_hindi: route.params.tapData.details_hindi,
-                            details_gujarati: route.params.tapData.details_gujarati,
+                            details_english: item.title.description_english,
+                            details_hindi: item.title.description_hindi,
+                            details_gujarati: item.title.description_gujarati,
                             audio: item.title.pachakhan_audio
                         }
                     });

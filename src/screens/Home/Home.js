@@ -38,6 +38,7 @@ const IMAGE_HEIGHT = height * IMAGE_SCALE;
 const CHART_SIZE = width * 0.95;
 const CHART_RADIUS = CHART_SIZE / 2;
 const SUN_EVENT_MINUTES = 15;
+
 const getDurationInMinutes = (timeRange) => {
     const [start, end] = timeRange.split('-').map(t => t.trim());
 
@@ -48,12 +49,13 @@ const getDurationInMinutes = (timeRange) => {
 
     return toMinutes(end) - toMinutes(start);
 };
+
 const getTimingColor = (timingName) => {
     const colorMap = {
         'Sunrise': '#FF9500',
         'Navkarshi': '#FFCC00',
         'Porisi': '#00E676',
-        'Saddha-Porisi': '#2979FF',
+        'Saddha Porisi': '#2979FF',
         'Purimaddha': '#D500F9',
         'Avaddha': '#FF3D00',
         'Sunset': '#FF1744',
@@ -79,7 +81,7 @@ const getTimingColor = (timingName) => {
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 
-const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, selectedDate, choghadiyaActiveTab }) => {
+const Chart = React.memo(({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, selectedDate, choghadiyaActiveTab }) => {
     const isFocused = useIsFocused();
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const iconAnim = useRef(new Animated.Value(0)).current;
@@ -114,7 +116,7 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
         return () => {
             animation.stop();
         };
-    }, [choghadiya, activeIndex, isFocused]);
+    }, [choghadiya, isFocused]);
 
     if (!isFocused) return null;
 
@@ -139,21 +141,59 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
         return { start: toMin(start), end: toMin(end) };
     };
 
-    // Get sunset time
-    const sunsetTime =
-        timingData.find(item => item.name === 'सूर्यास्त' || item.name === 'સૂર્યાસ્ત' || item.name === 'sunset')?.time;
 
-    // Determine if current time is before or after sunset
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const sunsetMinutes = sunsetTime ? toMinutes(sunsetTime) : null;
 
-    // Dynamic choghadiya selection based on current time
-    const isDaytime = sunsetMinutes ? nowMinutes < sunsetMinutes : true;
-    const currentChoghadiyaList = isDaytime ? choghadiya.day : choghadiya.night;
 
-    // Find current choghadiya based on activeIndex
-    const currentChoghadiya = currentChoghadiyaList.find((item, index) => index === activeIndex);
+    const sunsetTime = timingData.find(item =>
+        item.name === 'सूर्यास्त' || item.name === 'સૂર્યાસ્ત' || item.name === 'sunset'
+    )?.time;
+
+
+    const sunriseMinutes = (() => {
+        const t = sunTimes?.sunrise;
+        if (!t) return null;
+        const [h, m] = String(t).split(':').map(Number);
+        if (isNaN(h) || isNaN(m)) return null;
+        return h * 60 + m;
+    })();
+
+    const sunsetMinutes = (() => {
+        const t = sunTimes?.sunset;
+        if (!t) return null;
+        const [h, m] = String(t).split(':').map(Number);
+        if (isNaN(h) || isNaN(m)) return null;
+        return h * 60 + m;
+    })();
+
+    // Determine if it's currently daytime
+    const isDaytime = sunriseMinutes != null && sunsetMinutes != null &&
+        nowMinutes >= sunriseMinutes && nowMinutes < sunsetMinutes;
+
+    // Select appropriate choghadiya list based on actual time
+    const currentChoghadiyaList = isDaytime ? choghadiya.day : (choghadiya.night || []);
+
+    // Find current choghadiya based on actual time
+    const currentChoghadiya = (() => {
+        const allChoghadiyas = [...(choghadiya.day || []), ...(choghadiya.night || [])];
+
+        for (const item of allChoghadiyas) {
+            const { start, end } = rangeToMinutes(item.time);
+
+            if (start <= end) {
+                if (nowMinutes >= start && nowMinutes < end) {
+                    return item;
+                }
+            } else {
+                // For ranges crossing midnight (e.g., 23:00-01:00)
+                if (nowMinutes >= start || nowMinutes < end) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    })();
 
     const sortedTimings = [...timingData].sort(
         (a, b) => toMinutes(a.time) - toMinutes(b.time)
@@ -255,27 +295,12 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
         return segment;
     });
 
-    const daylightStartMin = (() => {
-        const t = sunTimes?.sunrise;
-        if (!t) return null;
-        const [h, m] = String(t).split(':').map(Number);
-        if (isNaN(h) || isNaN(m)) return null;
-        return h * 60 + m;
-    })();
-    const daylightEndMin = (() => {
-        const t = sunTimes?.sunset;
-        if (!t) return null;
-        const [h, m] = String(t).split(':').map(Number);
-        if (isNaN(h) || isNaN(m)) return null;
-        return h * 60 + m;
-    })();
-
     const angleFromMinute = (min) => {
-        if (daylightStartMin == null || daylightEndMin == null) return null;
-        const span = Math.max(daylightEndMin - daylightStartMin, 1);
-        const ratio = (min - daylightStartMin) / span;
+        if (sunriseMinutes == null || sunsetMinutes == null) return null;
+        const span = Math.max(sunsetMinutes - sunriseMinutes, 1);
+        const ratio = (min - sunriseMinutes) / span;
         const clamped = Math.max(0, Math.min(1, ratio));
-        return 180 - clamped * 180; // Goes from 180° (left) to 0° (right)
+        return 180 - clamped * 180;
     };
 
     const angleToPoint = (angleDeg, r) => {
@@ -286,20 +311,19 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
     };
 
     const borderSegments = [];
-    // Use the dynamically selected choghadiya list
     const dayList = currentChoghadiyaList || [];
-    if (dayList.length && daylightStartMin != null && daylightEndMin != null) {
+    if (dayList.length && sunriseMinutes != null && sunsetMinutes != null) {
         dayList.forEach((item, index) => {
             const { start, end } = rangeToMinutes(item.time);
-            const s = Math.max(start, daylightStartMin);
-            const e = Math.min(end, daylightEndMin);
+            const s = Math.max(start, sunriseMinutes);
+            const e = Math.min(end, sunsetMinutes);
             if (e <= s) return;
             const aStart = angleFromMinute(s);
             const aEnd = angleFromMinute(e);
             if (aStart == null || aEnd == null) return;
             const pStart = angleToPoint(aStart, outerRadius);
             const pEnd = angleToPoint(aEnd, outerRadius);
-            const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
+            const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચल|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
             borderSegments.push(
                 <Path
                     key={`border-${index}`}
@@ -312,53 +336,6 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
             );
         });
     }
-    // const list = choghadiyaActiveTab === 'sun' ? choghadiya?.day || []
-    //     : choghadiya?.night || [];
-    // if (list.length && daylightStartMin != null && daylightEndMin != null) {
-    //     list.forEach((item, idx) => {
-    //         const { start, end } = rangeToMinutes(item.time);
-    //         const s = Math.max(start, daylightStartMin);
-    //         const e = Math.min(end, daylightEndMin);
-    //         if (e <= s) return;
-    //         const aStart = angleFromMinute(s);
-    //         const aEnd = angleFromMinute(e);
-    //         if (aStart == null || aEnd == null) return;
-    //         const pStart = angleToPoint(aStart, outerRadius);
-    //         const pEnd = angleToPoint(aEnd, outerRadius);
-    //         const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
-    //         borderSegments.push(
-    //             <Path
-    //                 key={`border-${choghadiyaActiveTab}-${idx}`}
-    //                 d={`M ${pStart.x} ${pStart.y} A ${outerRadius} ${outerRadius} 0 0 1 ${pEnd.x} ${pEnd.y}`}
-    //                 fill="none"
-    //                 stroke={color}
-    //                 strokeWidth={8}
-    //                 strokeLinecap="square"
-    //             />
-    //         );
-    //     });
-    // }
-    // else {
-    //     list.forEach((item, idx) => {
-    //         const { start, end } = rangeToMinutes(item.time);
-    //         const aStart = angleFromMinute(start);
-    //         const aEnd = angleFromMinute(end);
-    //         if (aStart == null || aEnd == null) return;
-    //         const pStart = angleToPoint(aStart, outerRadius);
-    //         const pEnd = angleToPoint(aEnd, outerRadius);
-    //         const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
-    //         borderSegments.push(
-    //             <Path
-    //                 key={`border-${choghadiyaActiveTab}-${idx}`}
-    //                 d={`M ${pStart.x} ${pStart.y} A ${outerRadius} ${outerRadius} 0 0 1 ${pEnd.x} ${pEnd.y}`}
-    //                 fill="none"
-    //                 stroke={color}
-    //                 strokeWidth={8}
-    //                 strokeLinecap="square"
-    //             />
-    //         );
-    //     });
-    // }
 
     const dottedRadius = outerRadius + 12;
     const isToday = selectedDate && moment(selectedDate).isSame(moment(), 'day');
@@ -367,40 +344,24 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
     let iconPos = null;
     let iconAngle = null;
 
-    if (daylightStartMin != null && daylightEndMin != null) {
+    if (sunriseMinutes != null && sunsetMinutes != null) {
         if (isDaytime) {
-            // During daytime: sun moves along the arc from sunrise to sunset
             const nowAngle = angleFromMinute(nowMinutes);
             if (nowAngle != null) {
                 iconAngle = nowAngle;
                 iconPos = angleToPoint(nowAngle, dottedRadius);
             }
         } else {
-            // During nighttime: moon should also be on the SAME arc (180° to 0°)
-            // But the arc represents daytime, so at night we need to estimate position
-
-            // Option 1: Moon stays at sunset position (left side) at night
-            // iconPos = angleToPoint(180, dottedRadius); // Fixed at leftmost position
-
-            // Option 2: Moon moves gradually to sunrise position during the night
-            // Calculate time since sunset
-            const timeSinceSunset = nowMinutes - daylightEndMin;
-
-            // Calculate total night duration (from sunset to next sunrise)
-            // If we're past midnight, calculate differently
+            const timeSinceSunset = nowMinutes - sunsetMinutes;
             let nightDuration;
-            if (nowMinutes < daylightStartMin) {
-                // After midnight but before sunrise
-                nightDuration = (1440 - daylightEndMin) + daylightStartMin;
+            if (nowMinutes < sunriseMinutes) {
+                nightDuration = (1440 - sunsetMinutes) + sunriseMinutes;
             } else {
-                // After sunset but before midnight
-                nightDuration = 1440 - daylightEndMin + daylightStartMin;
+                nightDuration = 1440 - sunsetMinutes + sunriseMinutes;
             }
 
             if (nightDuration > 0) {
-                // Position moon from left (180°) to right (0°) during the night
                 const nightRatio = Math.min(timeSinceSunset / nightDuration, 1);
-                // Start at 180° (sunset position) and move toward 0° (sunrise position)
                 const nightAngle = 180 - (nightRatio * 180);
                 iconAngle = nightAngle;
                 iconPos = angleToPoint(nightAngle, dottedRadius);
@@ -408,7 +369,6 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
         }
     }
 
-    // Calculate rotation interpolation for the icon
     let rotateInputRange = [0, 1];
     let rotateOutputRange = ['0deg', '0deg'];
 
@@ -461,21 +421,23 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                     </Defs>
 
                     <G mask="url(#chartMask)">
-                        {segments}
-
-                        {borderSegments}
-
-                        <Path
-                            d={`M ${centerX - dottedRadius} ${centerY}
-                        A ${dottedRadius} ${dottedRadius} 0 0 1 ${centerX + dottedRadius} ${centerY}`}
-                            fill="none"
-                            stroke="#FFFFFF"
-                            strokeOpacity={0.9}
-                            strokeWidth={1}
-                            strokeDasharray="3,4"
-                            strokeLinecap="square"
-                        />
+                        {/* ONLY render filled segments during daytime */}
+                        {isDaytime && segments}
                     </G>
+
+                    {/* MOVED OUTSIDE MASK - Border segments and dotted line render ALWAYS */}
+                    {borderSegments}
+
+                    <Path
+                        d={`M ${centerX - dottedRadius} ${centerY}
+                    A ${dottedRadius} ${dottedRadius} 0 0 1 ${centerX + dottedRadius} ${centerY}`}
+                        fill="none"
+                        stroke="#FFFFFF"
+                        strokeOpacity={0.9}
+                        strokeWidth={1}
+                        strokeDasharray="3,4"
+                        strokeLinecap="square"
+                    />
                 </Svg>
 
                 {iconPos && isToday && (
@@ -492,7 +454,6 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                             { translateX: -dottedRadius }
                         ]
                     }}>
-                        {/* Dynamic icon based on day/night */}
                         <Icon
                             name={isDaytime ? "sunny" : "moon"}
                             size={20}
@@ -506,28 +467,28 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                 {/* LEFT SIDE: Sunset/Moon */}
                 {isDaytime ?
                     <View style={styles.timeContainer}>
-                        <Icon name="sunny" size={20} color="#FFD700" />
+                        <Icon name="sunny" size={20} color="#ffffffff" />
                         <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
                         <Text style={styles.timeText}>
                             {formatTime(sunTimes?.sunrise, i18n.locale)}
                         </Text>
                     </View> :
                     <View style={styles.timeContainer}>
-                        <Icon name="moon" size={20} color="#87CEEB" />
+                        <Icon name="moon" size={20} color="#ffffffff" />
                         <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
                         <Text style={styles.timeText}>
                             {formatTime(sunTimes?.sunset, i18n.locale)}
                         </Text>
                     </View>}
 
-                {/* CENTER: Current Choghadiya */}
+
                 {isToday && currentChoghadiya && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         <View
                             style={[
                                 styles.timingDot,
                                 {
-                                    backgroundColor: /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચल|labh|लाभ|લાભ/i.test(currentChoghadiya?.name || '')
+                                    backgroundColor: /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(currentChoghadiya?.name || '')
                                         ? '#FF8C00'
                                         : '#424242',
                                 },
@@ -546,14 +507,14 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
                 {/* RIGHT SIDE: Sunrise/Sun */}
                 {!isDaytime ?
                     <View style={styles.timeContainer}>
-                        <Icon name="sunny" size={20} color="#FFD700" />
+                        <Icon name="sunny" size={20} color="#ffffffff" />
                         <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
                         <Text style={styles.timeText}>
                             {formatTime(sunTimes?.sunrise, i18n.locale)}
                         </Text>
                     </View> :
                     <View style={styles.timeContainer}>
-                        <Icon name="moon" size={20} color="#87CEEB" />
+                        <Icon name="moon" size={20} color="#ffffffff" />
                         <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
                         <Text style={styles.timeText}>
                             {formatTime(sunTimes?.sunset, i18n.locale)}
@@ -562,7 +523,467 @@ const Chart = ({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], n
             </View>
         </View>
     );
-};
+});
+
+
+
+//Night hard coded
+
+// const Chart = React.memo(({ data: sunTimes = {}, timingData = [], choghadiya = { day: [], night: [] }, activeIndex, selectedDate, choghadiyaActiveTab }) => {
+//     const isFocused = useIsFocused();
+//     const fadeAnim = useRef(new Animated.Value(0)).current;
+//     const iconAnim = useRef(new Animated.Value(0)).current;
+//     const animationRef = useRef(null);
+
+//     useEffect(() => {
+//         if (!isFocused) {
+//             fadeAnim.setValue(0);
+//             iconAnim.setValue(0);
+//             return;
+//         }
+
+//         fadeAnim.setValue(0);
+//         iconAnim.setValue(0);
+//         const animation = Animated.parallel([
+//             Animated.timing(fadeAnim, {
+//                 toValue: 1,
+//                 duration: 4000,
+//                 useNativeDriver: false,
+//                 easing: Easing.inOut(Easing.cubic),
+//             }),
+//             Animated.timing(iconAnim, {
+//                 toValue: 1,
+//                 duration: 5500,
+//                 useNativeDriver: true,
+//                 easing: Easing.inOut(Easing.cubic),
+//             }),
+//         ]);
+//         animationRef.current = animation;
+//         animation.start();
+
+//         return () => {
+//             animation.stop();
+//         };
+//     }, [choghadiya, isFocused]);
+
+//     if (!isFocused) return null;
+
+//     const toMinutes = (time) => {
+//         const [h, m] = time.split(':').map(Number);
+//         return h * 60 + m;
+//     };
+
+//     const hexToRgba = (hex, alpha) => {
+//         const r = parseInt(hex.slice(1, 3), 16);
+//         const g = parseInt(hex.slice(3, 5), 16);
+//         const b = parseInt(hex.slice(5, 7), 16);
+//         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+//     };
+
+//     const rangeToMinutes = (range) => {
+//         const [start, end] = range.split('-').map(t => t.trim());
+//         const toMin = (t) => {
+//             const [h, m] = t.split(':').map(Number);
+//             return h * 60 + m;
+//         };
+//         return { start: toMin(start), end: toMin(end) };
+//     };
+
+//     // Get sunset time
+//     const sunsetTime =
+//         timingData.find(item => item.name === 'सूर्यास्त' || item.name === 'સૂર્યાસ્ત' || item.name === 'sunset')?.time;
+
+//     // HARDCODED FOR NIGHT TESTING - Override time-based logic
+//     // const now = new Date();
+//     // const nowMinutes = now.getHours() * 60 + now.getMinutes();
+//     const nowMinutes = 22 * 60; // Hardcoded to 10 PM for testing
+//     const sunsetTimeTest = "18:30"; // Hardcoded sunset time
+//     const sunriseTimeTest = "06:30"; // Hardcoded sunrise time
+//     const sunsetMinutes = toMinutes(sunsetTimeTest);
+
+//     // Force nighttime rendering
+//     const isDaytime = false; // HARDCODED: Set to false for night testing
+
+//     // Use hardcoded times for testing
+//     const sunTimesTest = {
+//         sunrise: sunriseTimeTest,
+//         sunset: sunsetTimeTest
+//     };
+//     const sunTimesToUse = sunTimesTest; // Use test times instead of props
+
+//     // Use night choghadiya data for testing
+//     const currentChoghadiyaList = isDaytime ? choghadiya.day : (choghadiya.night || []);
+
+//     // FIX: Find current choghadiya based on ACTUAL TIME, not activeIndex or tabs
+//     const currentChoghadiya = (() => {
+//         // Check all choghadiyas from both day and night to find the one active right now
+//         const allChoghadiyas = [...(choghadiya.day || []), ...(choghadiya.night || [])];
+
+//         for (const item of allChoghadiyas) {
+//             const { start, end } = rangeToMinutes(item.time);
+
+//             // Check if current time falls within this choghadiya's time range
+//             // Handle both normal ranges and ranges that cross midnight
+//             if (start <= end) {
+//                 if (nowMinutes >= start && nowMinutes < end) {
+//                     return item;
+//                 }
+//             } else {
+//                 // For ranges crossing midnight (e.g., 23:00-01:00)
+//                 if (nowMinutes >= start || nowMinutes < end) {
+//                     return item;
+//                 }
+//             }
+//         }
+//         return null;
+//     })();
+
+//     const sortedTimings = [...timingData].sort(
+//         (a, b) => toMinutes(a.time) - toMinutes(b.time)
+//     );
+
+//     const choghadiyaData = sortedTimings
+//         .map((item, index, arr) => {
+//             const start = toMinutes(item.time);
+
+//             let end;
+//             if (index < arr.length - 1) {
+//                 end = toMinutes(arr[index + 1].time);
+//             } else {
+//                 end = sunsetTimeTest ? toMinutes(sunsetTimeTest) : start;
+//             }
+
+//             const value = Math.max(end - start, 0);
+//             const isEdge = index === 0 || index === arr.length - 1;
+
+//             return {
+//                 label: item.name,
+//                 value,
+//                 color: isEdge
+//                     ? hexToRgba(item.color, 0.6)
+//                     : hexToRgba(item.color, 0.8),
+//                 time: item.time,
+//             };
+//         })
+//         .filter(item => item.value > 0);
+
+//     const total = choghadiyaData.reduce((s, i) => s + i.value, 0);
+
+//     const chartHeight = CHART_RADIUS * 1.2;
+//     const centerX = CHART_RADIUS;
+//     const centerY = CHART_RADIUS * 0.9;
+
+//     const outerRadius = CHART_RADIUS * 0.8;
+//     const innerRadius = CHART_RADIUS * 0.001;
+
+//     const midRadius = outerRadius / 2;
+//     const arcLength = Math.PI * midRadius;
+//     const maskStrokeWidth = outerRadius + 50;
+//     const maskPath = `M ${centerX - midRadius} ${centerY} A ${midRadius} ${midRadius} 0 0 1 ${centerX + midRadius} ${centerY}`;
+
+//     const strokeDashoffset = fadeAnim.interpolate({
+//         inputRange: [0, 1],
+//         outputRange: [arcLength, 0],
+//     });
+
+//     let startAngle = 180;
+
+//     const createHalfCircleSegment = (startAngle, endAngle, color, index) => {
+//         const startRad = (startAngle * Math.PI) / 180;
+//         const endRad = (endAngle * Math.PI) / 180;
+
+//         const x1 = centerX + innerRadius * Math.cos(startRad);
+//         const y1 = centerY - innerRadius * Math.sin(startRad);
+
+//         const x2 = centerX + innerRadius * Math.cos(endRad);
+//         const y2 = centerY - innerRadius * Math.sin(endRad);
+
+//         const x3 = centerX + outerRadius * Math.cos(endRad);
+//         const y3 = centerY - outerRadius * Math.sin(endRad);
+
+//         const x4 = centerX + outerRadius * Math.cos(startRad);
+//         const y4 = centerY - outerRadius * Math.sin(startRad);
+
+//         const path = `
+//       M ${x1} ${y1}
+//       A ${innerRadius} ${innerRadius} 0 0 1 ${x2} ${y2}
+//       L ${x3} ${y3}
+//       A ${outerRadius} ${outerRadius} 0 0 0 ${x4} ${y4}
+//       Z
+//     `;
+
+//         return (
+//             <Path
+//                 key={`segment-${index}`}
+//                 d={path}
+//                 fill={color}
+//                 stroke="white"
+//                 strokeWidth={0.5}
+//             />
+//         );
+//     };
+
+//     const segments = choghadiyaData.map((item, index) => {
+//         const angle = (item.value / total) * 180;
+//         const endAngle = startAngle - angle;
+
+//         const segment = createHalfCircleSegment(
+//             startAngle,
+//             endAngle,
+//             item.color,
+//             index
+//         );
+
+//         startAngle = endAngle;
+//         return segment;
+//     });
+
+//     const daylightStartMin = (() => {
+//         const t = sunTimesToUse?.sunrise; // Use test time
+//         if (!t) return null;
+//         const [h, m] = String(t).split(':').map(Number);
+//         if (isNaN(h) || isNaN(m)) return null;
+//         return h * 60 + m;
+//     })();
+//     const daylightEndMin = (() => {
+//         const t = sunTimesToUse?.sunset; // Use test time
+//         if (!t) return null;
+//         const [h, m] = String(t).split(':').map(Number);
+//         if (isNaN(h) || isNaN(m)) return null;
+//         return h * 60 + m;
+//     })();
+
+//     const angleFromMinute = (min) => {
+//         if (daylightStartMin == null || daylightEndMin == null) return null;
+//         const span = Math.max(daylightEndMin - daylightStartMin, 1);
+//         const ratio = (min - daylightStartMin) / span;
+//         const clamped = Math.max(0, Math.min(1, ratio));
+//         return 180 - clamped * 180;
+//     };
+
+//     const angleToPoint = (angleDeg, r) => {
+//         const rad = (angleDeg * Math.PI) / 180;
+//         const x = centerX + r * Math.cos(rad);
+//         const y = centerY - r * Math.sin(rad);
+//         return { x, y };
+//     };
+
+//     const borderSegments = [];
+//     // Use the dynamically selected choghadiya list based on time (not tabs)
+//     const dayList = currentChoghadiyaList || [];
+//     if (dayList.length && daylightStartMin != null && daylightEndMin != null) {
+//         dayList.forEach((item, index) => {
+//             const { start, end } = rangeToMinutes(item.time);
+//             const s = Math.max(start, daylightStartMin);
+//             const e = Math.min(end, daylightEndMin);
+//             if (e <= s) return;
+//             const aStart = angleFromMinute(s);
+//             const aEnd = angleFromMinute(e);
+//             if (aStart == null || aEnd == null) return;
+//             const pStart = angleToPoint(aStart, outerRadius);
+//             const pEnd = angleToPoint(aEnd, outerRadius);
+//             const color = /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(item.name) ? '#FF8C00' : '#424242';
+//             borderSegments.push(
+//                 <Path
+//                     key={`border-${index}`}
+//                     d={`M ${pStart.x} ${pStart.y} A ${outerRadius} ${outerRadius} 0 0 1 ${pEnd.x} ${pEnd.y}`}
+//                     fill="none"
+//                     stroke={color}
+//                     strokeWidth={8}
+//                     strokeLinecap="square"
+//                 />
+//             );
+//         });
+//     }
+
+//     const dottedRadius = outerRadius + 12;
+//     const isToday = selectedDate && moment(selectedDate).isSame(moment(), 'day');
+
+//     // Calculate position for the icon on dotted line
+//     let iconPos = null;
+//     let iconAngle = null;
+
+//     if (daylightStartMin != null && daylightEndMin != null) {
+//         if (isDaytime) {
+//             const nowAngle = angleFromMinute(nowMinutes);
+//             if (nowAngle != null) {
+//                 iconAngle = nowAngle;
+//                 iconPos = angleToPoint(nowAngle, dottedRadius);
+//             }
+//         } else {
+//             const timeSinceSunset = nowMinutes - daylightEndMin;
+//             let nightDuration;
+//             if (nowMinutes < daylightStartMin) {
+//                 nightDuration = (1440 - daylightEndMin) + daylightStartMin;
+//             } else {
+//                 nightDuration = 1440 - daylightEndMin + daylightStartMin;
+//             }
+
+//             if (nightDuration > 0) {
+//                 const nightRatio = Math.min(timeSinceSunset / nightDuration, 1);
+//                 const nightAngle = 180 - (nightRatio * 180);
+//                 iconAngle = nightAngle;
+//                 iconPos = angleToPoint(nightAngle, dottedRadius);
+//             }
+//         }
+//     }
+
+//     let rotateInputRange = [0, 1];
+//     let rotateOutputRange = ['0deg', '0deg'];
+
+//     if (iconAngle != null) {
+//         const finalRotation = 180 - iconAngle;
+//         const stopProgress = finalRotation / 180;
+
+//         if (stopProgress >= 0.99) {
+//             rotateInputRange = [0, 1];
+//             rotateOutputRange = ['0deg', `${finalRotation}deg`];
+//         } else if (stopProgress <= 0.01) {
+//             rotateInputRange = [0, 1];
+//             rotateOutputRange = ['0deg', '0deg'];
+//         } else {
+//             rotateInputRange = [0, stopProgress, 1];
+//             rotateOutputRange = ['0deg', `${finalRotation}deg`, `${finalRotation}deg`];
+//         }
+//     }
+
+//     const rotateAnim = iconAnim.interpolate({
+//         inputRange: rotateInputRange,
+//         outputRange: rotateOutputRange
+//     });
+
+//     return (
+//         <View style={[styles.chartContainer, { height: chartHeight }]}>
+//             <View style={{ width: CHART_SIZE, height: chartHeight, position: 'relative', alignSelf: 'center' }}>
+//                 <Svg width={CHART_SIZE} height={chartHeight}>
+//                     <Path
+//                         d={`M ${centerX - outerRadius} ${centerY}
+//               A ${outerRadius} ${outerRadius} 0 0 1 ${centerX + outerRadius} ${centerY}
+//               L ${centerX + innerRadius} ${centerY}
+//               A ${innerRadius} ${innerRadius} 0 0 0 ${centerX - innerRadius} ${centerY}
+//               Z`}
+//                         fill="rgba(255,255,255,0.1)"
+//                     />
+
+//                     <Defs>
+//                         <Mask id="chartMask">
+//                             <AnimatedPath
+//                                 d={maskPath}
+//                                 stroke="white"
+//                                 strokeWidth={maskStrokeWidth}
+//                                 fill="none"
+//                                 strokeDasharray={[arcLength, arcLength]}
+//                                 strokeDashoffset={strokeDashoffset}
+//                                 strokeLinecap="butt"
+//                             />
+//                         </Mask>
+//                     </Defs>
+
+//                     <G mask="url(#chartMask)">
+//                         {/* ONLY render filled segments during daytime */}
+//                         {isDaytime && segments}
+
+//                         {/* Always render border segments and dotted line */}
+//                         {borderSegments}
+
+//                         <Path
+//                             d={`M ${centerX - dottedRadius} ${centerY}
+//                         A ${dottedRadius} ${dottedRadius} 0 0 1 ${centerX + dottedRadius} ${centerY}`}
+//                             fill="none"
+//                             stroke="#FFFFFF"
+//                             strokeOpacity={0.9}
+//                             strokeWidth={1}
+//                             strokeDasharray="3,4"
+//                             strokeLinecap="square"
+//                         />
+//                     </G>
+//                 </Svg>
+
+//                 {iconPos && isToday && (
+//                     <Animated.View style={{
+//                         position: 'absolute',
+//                         left: centerX - 10,
+//                         top: centerY - 10,
+//                         width: 20,
+//                         height: 20,
+//                         justifyContent: 'center',
+//                         alignItems: 'center',
+//                         transform: [
+//                             { rotate: rotateAnim },
+//                             { translateX: -dottedRadius }
+//                         ]
+//                     }}>
+//                         <Icon
+//                             name={isDaytime ? "sunny" : "moon"}
+//                             size={20}
+//                             color={isDaytime ? "#fff" : "#fff"}
+//                         />
+//                     </Animated.View>
+//                 )}
+//             </View>
+
+//             <View style={styles.sunMoonContainer}>
+//                 {/* LEFT SIDE: Sunset/Moon */}
+//                 {isDaytime ?
+//                     <View style={styles.timeContainer}>
+//                         <Icon name="sunny" size={20} color="#ffffffff" />
+//                         <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
+//                         <Text style={styles.timeText}>
+//                             {formatTime(sunTimesToUse?.sunrise, i18n.locale)}
+//                         </Text>
+//                     </View> :
+//                     <View style={styles.timeContainer}>
+//                         <Icon name="moon" size={20} color="#ffffffff" />
+//                         <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
+//                         <Text style={styles.timeText}>
+//                             {formatTime(sunTimesToUse?.sunset, i18n.locale)}
+//                         </Text>
+//                     </View>}
+
+//                 {/* CENTER: Current Choghadiya - NOW ALWAYS SHOWS CURRENT TIME-BASED CHOGHADIYA */}
+//                 {isToday && currentChoghadiya && (
+//                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+//                         <View
+//                             style={[
+//                                 styles.timingDot,
+//                                 {
+//                                     backgroundColor: /amrut|amrit|अमृत|અમૃત|shubh|शुभ|શુભ|chal|चल|ચલ|labh|लाभ|લાભ/i.test(currentChoghadiya?.name || '')
+//                                         ? '#FF8C00'
+//                                         : '#424242',
+//                                 },
+//                             ]}
+//                         />
+
+//                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+//                             <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold', opacity: 0.8 }}>{currentChoghadiya?.name}</Text>
+//                             <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold', opacity: 0.8 }}>
+//                                 {formatTime(currentChoghadiya?.time, i18n.locale)}
+//                             </Text>
+//                         </View>
+//                     </View>
+//                 )}
+
+//                 {/* RIGHT SIDE: Sunrise/Sun */}
+//                 {!isDaytime ?
+//                     <View style={styles.timeContainer}>
+//                         <Icon name="sunny" size={20} color="#ffffffff" />
+//                         <Text style={styles.timeLabel}>{i18n.t('time.sunrise')}</Text>
+//                         <Text style={styles.timeText}>
+//                             {formatTime(sunTimesToUse?.sunrise, i18n.locale)}
+//                         </Text>
+//                     </View> :
+//                     <View style={styles.timeContainer}>
+//                         <Icon name="moon" size={20} color="#ffffffff" />
+//                         <Text style={styles.timeLabel}>{i18n.t('time.sunset')}</Text>
+//                         <Text style={styles.timeText}>
+//                             {formatTime(sunTimesToUse?.sunset, i18n.locale)}
+//                         </Text>
+//                     </View>}
+//             </View>
+//         </View>
+//     );
+// });
+
 
 const Home = ({ route, navigation }) => {
     const isFocused = useIsFocused();
@@ -580,7 +1001,6 @@ const Home = ({ route, navigation }) => {
     const [globalData, setGlobalData] = useState({});
     const [dashboardData, setDashboardData] = useState({});
     const [choghadiyaData, setChoghadiyaData] = useState({ day: [], night: [] });
-    console.log("choghadiyaData", choghadiyaData);
     const [isLoading, setIsLoading] = useState(true);
     const [jainDateInfo, setJainDateInfo] = useState('');
     const { city } = route.params || {};
@@ -602,24 +1022,23 @@ const Home = ({ route, navigation }) => {
 
     const isToday = selectedDate && moment(selectedDate).isSame(moment(), 'day');
 
-    // const [tick, setTick] = useState(0);
+    const [kalyanakList, setKalyanakList] = useState([]); 
+    const [kalyanakIndex, setKalyanakIndex] = useState(0); 
+    const current = kalyanakList[kalyanakIndex] || {};
 
-    // /* 1.  one-second ticker */
-    // useEffect(() => {
-    //     const id = setInterval(() => setTick(t => t + 1), 60_000); // 60 s
-    //     return () => clearInterval(id);
-    // }, []);
+    const godName = i18n.locale === 'gu' ? current.gu_god_name
+        : i18n.locale === 'hi' ? current.hi_god_name
+            : current.en_god_name;
 
-    // /* 2.  when the local day changes, re-fetch */
-    // useEffect(() => {
-    //     const now = new Date();
-    //     if (!moment(now).isSame(selectedDate, 'day')) {
-    //         setSelectedDate(now);          // this triggers the existing useEffect
-    //     }
-    // }, [tick]);
+    const kalyanakName = i18n.locale === 'gu' ? current.gu_kalyanak_name
+        : i18n.locale === 'hi' ? current.hi_kalyanak_name
+            : current.en_kalyanak_name;
 
-    const [godName, setGodName] = useState('');
-    const [kalyanakName, setKalyanakName] = useState('');
+    const goPrev = () =>
+        setKalyanakIndex(i => (i - 1 + kalyanakList.length) % kalyanakList.length);
+
+    const goNext = () =>
+        setKalyanakIndex(i => (i + 1) % kalyanakList.length);
 
     useEffect(() => {
         const loadData = async () => {
@@ -708,7 +1127,7 @@ const Home = ({ route, navigation }) => {
         try {
             setLoading(true);
 
-            /* ----------  city ---------- */
+          
             const selectedCityStr = await AsyncStorage.getItem('selectedCity');
             const selectedCity = selectedCityStr
                 ? JSON.parse(selectedCityStr)
@@ -718,12 +1137,12 @@ const Home = ({ route, navigation }) => {
                     country_code: 'IN',
                 };
 
-            /* ----------  date parts ---------- */
+
             const day = date.getDate();
             const year = date.getFullYear().toString();
             const month = String(date.getMonth() + 1).padStart(2, '0');
 
-            /* ----------  payload ---------- */
+          
             const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
             const payload = {
                 week_name: weekday,
@@ -750,15 +1169,15 @@ const Home = ({ route, navigation }) => {
                 payload.country_code,
             );
 
-            /* ----------  handle response ---------- */
+
             if (response?.data) {
-                /* 1.  choghadiya */
+
                 const choghadiya = response.data ? convertChoghadiya(response.data) : { day: [], night: [] };
                 setChoghadiyaData(choghadiya);
 
                 console.log('Fresh choghadiyaData set ➜', choghadiya);
 
-                /* 2.  timing array + active index */
+
                 if (response?.timedata?.data) {
                     const timingArray = processTimingData(response.timedata.data, i18n.locale);
                     const activeIndex = getCurrentTimingIndex(timingArray);
@@ -768,7 +1187,7 @@ const Home = ({ route, navigation }) => {
                     }));
                     setTimingData(finalTimingData);
 
-                    /* sunrise / sunset for chart header */
+               
                     const englishTimings = response.timedata.data.english || {};
                     setSunTimes({
                         sunrise: englishTimings.Sunrise || '--:--',
@@ -779,25 +1198,16 @@ const Home = ({ route, navigation }) => {
                     setSunTimes({ sunrise: '--:--', sunset: '--:--' });
                 }
 
-                /* 3.  kalyanak / god name */
-                if (response?.day_kalyanak_god) {
-                    const god = response.day_kalyanak_god;
-                    const godName =
-                        i18n.locale === 'gu' ? god.gu_god_name
-                            : i18n.locale === 'hi' ? god.hi_god_name
-                                : god.en_god_name;
-                    const kalyanakName =
-                        i18n.locale === 'gu' ? god.gu_kalyanak_name
-                            : i18n.locale === 'hi' ? god.hi_kalyanak_name
-                                : god.en_kalyanak_name;
-                    setGodName(godName || '');
-                    setKalyanakName(kalyanakName || '');
+               
+                if (Array.isArray(response?.day_kalyanak_god) && response.day_kalyanak_god.length) {
+                    setKalyanakList(response.day_kalyanak_god);
+                    setKalyanakIndex(0); 
                 }
 
-                /* 4.  raw dashboard data (if you need it elsewhere) */
+                
                 setDashboardData(response.data || {});
             } else {
-                /* empty state */
+                
                 setChoghadiyaData({ day: [], night: [] });
                 setTimingData([]);
                 setSunTimes({ sunrise: '--:--', sunset: '--:--' });
@@ -807,7 +1217,7 @@ const Home = ({ route, navigation }) => {
             }
         } catch (error) {
             console.error('Error in getDashboardDataWithTiming:', error);
-            /* fallback empty state */
+          
             setChoghadiyaData({ day: [], night: [] });
             setTimingData([]);
             setSunTimes({ sunrise: '--:--', sunset: '--:--' });
@@ -933,7 +1343,7 @@ const Home = ({ route, navigation }) => {
     const onShare = async () => {
         try {
             await Share.share({
-                message: 'Jain Panchang - Vitraag http://play.google.com/store/apps/details?id=gnhub.vitraag         ',
+                message: 'Jain Panchang - Vitraag http://play.google.com/store/apps/details?id=gnhub.vitraag          ',
             });
         } catch (e) {
             // ignore
@@ -1134,7 +1544,14 @@ const Home = ({ route, navigation }) => {
                                     contentContainerStyle={[styles.content, styles.scrollContent]}
                                     showsVerticalScrollIndicator={false}
                                 >
-                                    <Chart data={sunTimes} timingData={timingData} choghadiya={choghadiyaData} activeIndex={activeIndex} choghadiyaActiveTab={choghadiyaActiveTab} selectedDate={selectedDate} />
+                                    <Chart
+                                        data={sunTimes}
+                                        timingData={timingData}
+                                        choghadiya={choghadiyaData}
+                                        activeIndex={activeIndex}
+                                        choghadiyaActiveTab={choghadiyaActiveTab}
+                                        selectedDate={selectedDate}
+                                    />
 
                                     <View style={styles.tabs}>
                                         <TouchableOpacity
@@ -1155,11 +1572,19 @@ const Home = ({ route, navigation }) => {
                                         </TouchableOpacity>
                                     </View>
 
-                                    {godName || kalyanakName ? (
+                                    {kalyanakList.length ? (
                                         <View style={styles.godContainer}>
+                                            <TouchableOpacity onPress={goPrev} style={styles.arrowButton}>
+    <Icon name="chevron-back" size={24} color="#fff" />
+</TouchableOpacity>
+
                                             <Text style={styles.godName}>
                                                 {godName}{kalyanakName ? ` - ${kalyanakName} ${i18n.t('menu.kalyanak')}` : ''}
                                             </Text>
+
+                                            <TouchableOpacity onPress={goNext} style={styles.arrowButton}>
+    <Icon name="chevron-forward" size={24} color="#fff" />
+</TouchableOpacity>
                                         </View>
                                     ) : null}
 
@@ -1219,7 +1644,7 @@ const Home = ({ route, navigation }) => {
                                     ) : (
                                         <View style={styles.choghadiyaContainer}>
                                             <TouchableOpacity style={{ flexDirection: 'row', justifyContent: 'center', alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('sun')}>
-                                                <Icon name={choghadiyaActiveTab == 'sun' ? "sunny" : "sunny-outline"} size={20} color="#FFD700" />
+                                                <Icon name={choghadiyaActiveTab == 'sun' ? "sunny" : "sunny-outline"} size={20} color="#ffffffff" />
                                                 {choghadiyaActiveTab == 'sun' && <Fontisto name="caret-right" size={20} color="#fff" />}
                                             </TouchableOpacity>
                                             <View style={{ alignItems: "center", paddingLeft: 10, width: "70%" }}>
@@ -1227,7 +1652,6 @@ const Home = ({ route, navigation }) => {
                                                     ? choghadiyaData.day
                                                     : choghadiyaData.night
                                                 ).map((item, index) => (
-                                                    console.log("choghadiyaData", choghadiyaData),
                                                     <View key={item.id} style={styles.choghadityaYimingItem}>
 
                                                         <View
@@ -1256,7 +1680,7 @@ const Home = ({ route, navigation }) => {
                                             </View>
                                             <TouchableOpacity style={{ flexDirection: 'row', justifyContent: "center", alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('moon')}>
                                                 {choghadiyaActiveTab != 'sun' && <Fontisto name="caret-left" size={20} color="#fff" />}
-                                                <Icon name={choghadiyaActiveTab != 'sun' ? "moon" : "moon-outline"} size={20} color="#87CEEB" />
+                                                <Icon name={choghadiyaActiveTab != 'sun' ? "moon" : "moon-outline"} size={20} color="#ffffffff" />
                                             </TouchableOpacity>
                                         </View>
                                     )}
@@ -1602,12 +2026,22 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         padding: 5,
     },
-    godName: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 5,
-    },
+  godName: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    flex: 1,           
+    flexWrap: 'wrap',  
+    textAlign: 'center',
+    marginHorizontal: 5,
+},
+
+arrowButton: {
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+},
     timingsContainer: {
         borderRadius: 15,
         marginHorizontal: 15,

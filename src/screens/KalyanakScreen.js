@@ -5,7 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import i18n, { getCurrentLanguage } from '../i18n/i18n';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import database, { getKalyanakEvents } from '../database/database'; // We'll create this function
+import database, { getKalyanakEvents } from '../database/database';
 import { convertNumber, formatJainDate } from '../utils/numberConverter';
 import { getFrontPanchKalyanaks } from '../component/global';
 import { useRoute } from '@react-navigation/native';
@@ -67,22 +67,53 @@ const KalyanakScreen = () => {
     };
 
     const groupedData = React.useMemo(() => {
-        const map = new Map();
-        (kalyanakData || []).forEach(evt => {
+        if (!kalyanakData?.length) return [];
 
-            const month = getMonthFromJainDate(language === 'gu' ? evt.guj_month_gujarati_name : language === 'hi' ? evt.guj_month_hindi_name : evt.guj_month_english_name);
-            if (!map.has(month)) map.set(month, []);
-            map.get(month).push(evt);
+        const byYear = {};
+        kalyanakData.forEach(evt => {
+            const y = convertNumber(new Date(evt.date_calendar).getFullYear(), language);
+            if (!byYear[y]) byYear[y] = [];
+            byYear[y].push(evt);
         });
 
-        const result = [];
-        Array.from(map.entries()).forEach(([month, items]) => {
-            result.push({ type: 'header', id: `hdr-${month}`, title: month });
-            items.forEach(it => result.push({ ...it, type: 'event' }));
-        });
-        return result;
-    }, [kalyanakData]);
+        const flatList = [];
 
+        Object.keys(byYear)
+            .sort((a, b) => a - b)
+            .forEach(year => {
+                const monthMap = new Map();
+                const firstSeen = {};
+
+                byYear[year].forEach(evt => {
+                    const jm = (() => {
+                        if (language === 'gu') return evt.guj_month_gujarati_name;
+                        if (language === 'hi') return evt.guj_month_hindi_name;
+                        return evt.guj_month_english_name;
+                    })();
+
+                    if (!monthMap.has(jm)) {
+                        monthMap.set(jm, []);
+                        firstSeen[jm] = evt.date_calendar;
+                    }
+                    monthMap.get(jm).push(evt);
+                });
+
+                const sortedMonths = Array.from(monthMap.keys()).sort(
+                    (a, b) => new Date(firstSeen[a]) - new Date(firstSeen[b])
+                );
+
+                sortedMonths.forEach(jm => {
+                    flatList.push({ type: 'header', id: `${year}-${jm}`, title: `${jm} ${year}` });
+                    monthMap.get(jm).forEach(evt =>
+                        flatList.push({ ...evt, type: 'event' })
+                    );
+                });
+            });
+
+        return flatList;
+    }, [kalyanakData, language]);
+
+    
 
     const renderMonthSection = ({ item }) => {
         if (item?.type === 'header') {
@@ -102,7 +133,7 @@ const KalyanakScreen = () => {
                 onPress={() => {
                     navigation.navigate('Home', {
                         selectedDate: event?.date_calendar,
-                        scrollToKalyanak: event.id // Optional: to highlight the event in Home
+                        scrollToKalyanak: event.id 
                     });
                 }}
             >
@@ -118,6 +149,7 @@ const KalyanakScreen = () => {
                         {language == "gu" ? event?.event_name_gujarati : language == "hi" ? event?.event_name_hindi : event?.event_name}
                         {event?.tithi ? ` • ${convertNumber(event.tithi, i18n.locale)}` : ''}
                     </Text>
+                    <Text style={styles.eventSubtitle}>{event.date_calendar}</Text>
                 </View>
                 <Icon name="chevron-right" size={24} color="#9E9E9E" />
             </TouchableOpacity>

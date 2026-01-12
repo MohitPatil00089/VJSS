@@ -54,9 +54,9 @@ const PachhakkhanScreen = ({ navigation }) => {
                 hindi: item.pachakhan_details.details_hindi,
                 english: item.pachakhan_details.details_english,
                 detail: item.pachakhan_details.details_detail,
-                details_english: item.details,
-                details_hindi: item.details_hindi,
-                details_gujarati: item.details_gujarati,
+                details_english: item.pachakhan_details.description_english,
+                details_hindi: item.pachakhan_details.description_hindi,
+                details_gujarati: item.pachakhan_details.description_gujarati,
                 audio: item.pachakhan_details.pachakhan_audio
             }
 
