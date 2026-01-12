@@ -1,5 +1,5 @@
 // src/screens/JainCalendarScreen.js
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
     Text,
@@ -7,15 +7,14 @@ import {
     FlatList,
     TouchableOpacity,
     ActivityIndicator,
-    ScrollView,
     Image,
 } from 'react-native';
-import { getCalendarData, getEventsForDate } from '../database/database';
+import { getEventsForDate } from '../database/database';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from '../i18n/i18n';
-import { convertDateMonthsOnly, convertDigitsOnly, convertJainDateNumber, formatJainDate, formatMonthYear } from '../utils/numberConverter';
+import { convertJainDateNumber, formatMonthYear } from '../utils/numberConverter';
 import { getFrontCalendar } from '../component/global';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LanguageSelectorModal from '../component/LanguageSelectorModal';
@@ -26,11 +25,11 @@ const JainCalendarScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [calendarData, setCalendarData] = useState([]);
     const [selectedDate, setSelectedDate] = useState(null);
-    const [events, setEvents] = useState([]);
+    const [setEvents] = useState([]);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [importing, setImporting] = useState(false);
     const [language, setLanguage] = useState(i18n.locale);
-    const [activeTab, setActiveTab] = useState('Shubh Days');
+    const [kshayTithiList, setKshayTithiList] = useState([]);
 
     useEffect(() => {
         let lang = i18n.locale;
@@ -78,16 +77,25 @@ const JainCalendarScreen = ({ navigation }) => {
             if (response && response.data) {
                 setCalendarData(response.data);
 
-                // Set today's date as selected if available in the response
+                // ✅ Extract skipped (kshay) tithi
+                if (response.about_tithi && Array.isArray(response.about_tithi)) {
+                    const skipped = response.about_tithi.filter(
+                        item => item.type === 'skip'
+                    );
+                    setKshayTithiList(skipped);
+                } else {
+                    setKshayTithiList([]);
+                }
+
                 const today = new Date();
                 const todayStr = today.toISOString().split('T')[0];
                 const todayInMonth = response.data.some(d => d.dateString === todayStr);
 
                 if (todayInMonth) {
                     setSelectedDate(todayStr);
-                    // await loadEvents(todayStr);
                 }
             }
+
         } catch (error) {
             console.error('Error loading month data:', error);
         } finally {
@@ -113,6 +121,26 @@ const JainCalendarScreen = ({ navigation }) => {
         next.setMonth(currentMonth.getMonth() + 1);
         setCurrentMonth(next);
         loadMonthData(next);
+    };
+
+    // builds the Jain month string exactly like you do in the cell
+    const jainMonthRangeHeader = (data) => {
+        if (!data || !data.length) return '';
+
+        const first = data[0];
+        const last = data[data.length - 1];
+
+        const pick = (item) =>
+            i18n.locale === 'en'
+                ? item.guj_month_english_name
+                : i18n.locale === 'gu'
+                    ? item.guj_month_gujarati_name
+                    : item.guj_month_hindi_name;
+
+        const firstMonth = pick(first);
+        const lastMonth = pick(last);
+
+        return firstMonth === lastMonth ? firstMonth : `${firstMonth} – ${lastMonth}`;
     };
 
     const loadEvents = async (date) => {
@@ -242,12 +270,12 @@ const JainCalendarScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
                     <Icon name="chevron-left" size={24} color="#333" />
                 </TouchableOpacity>
-                <View style={styles.monthYearContainer}>
-                    <Text style={styles.monthText}>
-                        {formatMonthYear(currentMonth).month}
+                <View style={{ alignItems: 'center' }}>
+                    <Text style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+                        {jainMonthRangeHeader(calendarData)}
                     </Text>
-                    <Text style={styles.yearText}>
-                        {formatMonthYear(currentMonth).year}
+                    <Text style={styles.monthText}>
+                        {formatMonthYear(currentMonth).month} {formatMonthYear(currentMonth).year}
                     </Text>
                 </View>
                 <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
@@ -303,93 +331,27 @@ const JainCalendarScreen = ({ navigation }) => {
                                 <Text style={styles.legendText}>{i18n.t('jainCalendar.shubh_day')}</Text>
                             </View>
                         </View>
+                        {kshayTithiList.length > 0 && (
+                            <View style={styles.kshayContainer}>
+                                <Text style={styles.kshayTitle}> {i18n.t('jainCalendar.tithiKshay')}</Text>
+
+                                {kshayTithiList.map((item, index) => (
+                                    <View key={index} style={styles.kshayRow}>
+                                        <Text style={styles.kshayText}>
+                                            {convertJainDateNumber(item.tithi, i18n.locale)} {i18n.t('jainCalendar.tithi')}
+                                        </Text>
+
+                                        <Text style={styles.kshayDate}>
+                                            {item.date}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
                     </View>
                 )}
             />
 
-            {/* Bottom Tab Bar */}
-            {/* <View style={styles.bottomTabBar}>
-                <TouchableOpacity
-                    style={[styles.tabButton, activeTab === 'Shubh Days' && styles.activeTab]}
-                    onPress={() => setActiveTab('Shubh Days')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'Shubh Days' && styles.activeTabText]}>
-                        Shubh Days
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.tabButton, activeTab === 'Events' && styles.activeTab]}
-                    onPress={() => setActiveTab('Events')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'Events' && styles.activeTabText]}>
-                        Events
-                    </Text>
-                </TouchableOpacity>
-            </View> */}
-
-            {/* Tab Content */}
-            {/* <ScrollView style={styles.tabContent}>
-                {activeTab === 'Shubh Days' ? (
-                    <View style={styles.tabInner}>
-                        <Text style={styles.tabTitle}>Shubh Days This Month</Text>
-                        {calendarData
-                            .filter(d => ['8', '14'].includes(d.tithi) || (d.tithi === '5' && d.paksha_type?.toLowerCase() === 'sud'))
-                            .map((day, idx) => (
-                                <View key={idx} style={styles.shubhDayCard}>
-                                    <Text style={styles.shubhDayText}>
-                                        {convertJainDateNumber(day.day, i18n.locale)}/{convertJainDateNumber(day.month, i18n.locale)} - Tithi {convertJainDateNumber(day.tithi, i18n.locale)} {day.paksha_type}
-                                    </Text>
-                                </View>
-                            ))}
-                    </View>
-                ) : (
-                    <View style={styles.tabInner}>
-                        <Text style={styles.tabTitle}>Events</Text>
-                        {events.length > 0 ? (
-                            events.map((event, idx) => (
-                                <View key={idx} style={styles.eventCard}>
-                                    <Text style={styles.eventTitle}>{event.title}</Text>
-                                    <Text style={styles.eventDesc}>{event.description}</Text>
-                                </View>
-                            ))
-                        ) : (
-                            <Text style={styles.noEventsText}>No events for this month.</Text>
-                        )}
-                    </View>
-                )}
-            </ScrollView> */}
-
-            {/* Events Section */}
-            {/* <View style={styles.eventsSection}>
-                <View style={styles.eventsSectionHeader}>
-                    <Text style={styles.eventsSectionTitle}>Events</Text>
-                    {selectedDate && (
-                        <Text style={styles.selectedDateLabel}>
-                            {new Date(selectedDate).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                            })}
-                        </Text>
-                    )}
-                </View>
-
-                <ScrollView style={styles.eventsScrollView}>
-                    {events.length > 0 ? (
-                        events.map((item, index) => (
-                            <View key={index}>
-                                {renderEventItem({ item })}
-                            </View>
-                        ))
-                    ) : (
-                        <View style={styles.noEventsContainer}>
-                            <Text style={styles.noEventsEmoji}>📭</Text>
-                            <Text style={styles.noEventsText}>No events for this date</Text>
-                        </View>
-                    )}
-                </ScrollView>
-            </View> */}
             <LanguageSelectorModal
                 visible={showLanguageModal}
                 onClose={() => setShowLanguageModal(false)}
@@ -408,7 +370,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#9E1B17',
+        backgroundColor: '#000',
         paddingVertical: 15,
         paddingHorizontal: 15,
     },
@@ -440,9 +402,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#d8d8d8',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
+        borderBottomColor: '#d8d8d8',
     },
     navButton: {
         width: 40,
@@ -459,23 +421,25 @@ const styles = StyleSheet.create({
     },
     monthYearContainer: {
         alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
     },
     monthText: {
-        fontSize: 20,
+        fontSize: 15,
         fontWeight: '600',
         color: '#1A1A1A',
     },
     yearText: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 2,
+        fontSize: 15,
+        color: '#000',
+        marginStart: 6,
     },
     weekDaysContainer: {
         flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#d8d8d8',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
+        borderBottomColor: '#000',
     },
     weekDayCell: {
         flex: 1,
@@ -484,7 +448,7 @@ const styles = StyleSheet.create({
     weekDayText: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#666',
+        color: '#000',
         textTransform: 'uppercase',
     },
     calendarGrid: {
@@ -681,77 +645,34 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
     },
-    // bottomTabBar: {
-    //     flexDirection: 'row',
-    //     backgroundColor: '#FFFFFF',
-    //     borderTopWidth: 1,
-    //     borderColor: '#E5E5E5',
-    //     paddingVertical: 8,
-    //     paddingHorizontal: 20,
-    //     justifyContent: 'space-around',
-    // },
-    // tabButton: {
-    //     flex: 1,
-    //     paddingVertical: 10,
-    //     alignItems: 'center',
-    //     borderRadius: 20,
-    //     marginHorizontal: 5,
-    // },
-    // activeTab: {
-    //     backgroundColor: '#9E1B17',
-    // },
-    // tabText: {
-    //     fontSize: 14,
-    //     color: '#666',
-    //     fontWeight: '500',
-    // },
-    // activeTabText: {
-    //     color: '#FFFFFF',
-    // },
-    // tabContent: {
-    //     flex: 1,
-    //     backgroundColor: '#F8F9FA',
-    //     paddingHorizontal: 20,
-    //     paddingTop: 10,
-    //     paddingBottom: 1050,
-    // },
-    // tabInner: {
-    //     paddingBottom: 30,
-    // },
-    // tabTitle: {
-    //     fontSize: 18,
-    //     fontWeight: '600',
-    //     marginBottom: 12,
-    //     color: '#1A1A1A',
-    // },
-    // shubhDayCard: {
-    //     backgroundColor: '#FFFFFF',
-    //     padding: 12,
-    //     borderRadius: 10,
-    //     marginBottom: 8,
-    //     elevation: 1,
-    // },
-    // shubhDayText: {
-    //     fontSize: 14,
-    //     color: '#333',
-    // },
-    // eventCard: {
-    //     backgroundColor: '#FFFFFF',
-    //     padding: 12,
-    //     borderRadius: 10,
-    //     marginBottom: 8,
-    //     elevation: 1,
-    // },
-    // eventTitle: {
-    //     fontSize: 14,
-    //     fontWeight: '600',
-    //     color: '#1A1A1A',
-    // },
-    // eventDesc: {
-    //     fontSize: 12,
-    //     color: '#666',
-    //     marginTop: 4,
-    // },
+    kshayContainer: {
+        backgroundColor: '#fff',
+        marginTop: 10,
+        marginBottom: 20,
+        borderColor: '#fff',
+    },
+    kshayTitle: {
+        paddingStart: 10,
+        backgroundColor: '#d8d8d8',
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#000',
+        marginBottom: 6,
+    },
+    kshayRow: {
+        marginBottom: 6,
+    },
+    kshayText: {
+        fontSize: 12,
+        marginStart: 10,
+        fontWeight: '600',
+        color: '#333',
+    },
+    kshayDate: {
+        marginStart: 10,
+        fontSize: 11,
+        color: '#666',
+    },
 });
 
 export default JainCalendarScreen;

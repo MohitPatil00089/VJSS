@@ -957,7 +957,7 @@ const Home = ({ route, navigation }) => {
             } else if (item?.name == "Avaddha" || item?.name == "अवड्ढ" || item?.name == "અવધ") {
                 return event.id == "aYOxlpzRMwrX3gD7";
             } else if (item?.name == "Chovihar" || item?.name == "चौविहार" || item?.name == "ચોવિહાર") {
-                return event.id == "aYOxlpzRMwrX3gD7";
+                return event.id == "XOKlq3GKmwA1PWJ7";
             }
             else {
                 return null
@@ -976,11 +976,17 @@ const Home = ({ route, navigation }) => {
         navigation.navigate("PachhakkhanDetail", {
             pachhakkhanId: matchedObjectFromEvent.id,
             title,
+            titleHindi: matchedObjectFromEvent.name_hindi,
+            titleEnglish: matchedObjectFromEvent.name_english,
+            titleGujarati: matchedObjectFromEvent.name_gujarati,
             content: {
                 gujarati: matchedObjectFromEvent.pachakhan_details.details_gujarati,
                 hindi: matchedObjectFromEvent.pachakhan_details.details_hindi,
                 english: matchedObjectFromEvent.pachakhan_details.details_english,
                 detail: matchedObjectFromEvent.pachakhan_details.details_detail,
+                details_english: matchedObjectFromEvent.pachakhan_details.description_english,
+                details_hindi: matchedObjectFromEvent.pachakhan_details.description_hindi,
+                details_gujarati: matchedObjectFromEvent.pachakhan_details.description_gujarati,
                 audio: matchedObjectFromEvent.pachakhan_details.pachakhan_audio,
             },
         });
@@ -1635,12 +1641,12 @@ const styles = StyleSheet.create({
     timingName: {
         width: '50%',
         color: 'white',
-        fontSize: 13,
+        fontSize: 11,
     },
     timingTime: {
         width: '55%',
         color: 'white',
-        fontSize: 13,
+        fontSize: 11,
         fontWeight: 'bold',
         opacity: 0.8,
     },
