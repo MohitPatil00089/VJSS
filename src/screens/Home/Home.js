@@ -1022,8 +1022,8 @@ const Home = ({ route, navigation }) => {
 
     const isToday = selectedDate && moment(selectedDate).isSame(moment(), 'day');
 
-    const [kalyanakList, setKalyanakList] = useState([]); 
-    const [kalyanakIndex, setKalyanakIndex] = useState(0); 
+    const [kalyanakList, setKalyanakList] = useState([]);
+    const [kalyanakIndex, setKalyanakIndex] = useState(0);
     const current = kalyanakList[kalyanakIndex] || {};
 
     const godName = i18n.locale === 'gu' ? current.gu_god_name
@@ -1127,7 +1127,7 @@ const Home = ({ route, navigation }) => {
         try {
             setLoading(true);
 
-          
+
             const selectedCityStr = await AsyncStorage.getItem('selectedCity');
             const selectedCity = selectedCityStr
                 ? JSON.parse(selectedCityStr)
@@ -1142,7 +1142,7 @@ const Home = ({ route, navigation }) => {
             const year = date.getFullYear().toString();
             const month = String(date.getMonth() + 1).padStart(2, '0');
 
-          
+
             const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
             const payload = {
                 week_name: weekday,
@@ -1187,7 +1187,7 @@ const Home = ({ route, navigation }) => {
                     }));
                     setTimingData(finalTimingData);
 
-               
+
                     const englishTimings = response.timedata.data.english || {};
                     setSunTimes({
                         sunrise: englishTimings.Sunrise || '--:--',
@@ -1198,16 +1198,16 @@ const Home = ({ route, navigation }) => {
                     setSunTimes({ sunrise: '--:--', sunset: '--:--' });
                 }
 
-               
+
                 if (Array.isArray(response?.day_kalyanak_god) && response.day_kalyanak_god.length) {
                     setKalyanakList(response.day_kalyanak_god);
-                    setKalyanakIndex(0); 
+                    setKalyanakIndex(0);
                 }
 
-                
+
                 setDashboardData(response.data || {});
             } else {
-                
+
                 setChoghadiyaData({ day: [], night: [] });
                 setTimingData([]);
                 setSunTimes({ sunrise: '--:--', sunset: '--:--' });
@@ -1217,7 +1217,7 @@ const Home = ({ route, navigation }) => {
             }
         } catch (error) {
             console.error('Error in getDashboardDataWithTiming:', error);
-          
+
             setChoghadiyaData({ day: [], night: [] });
             setTimingData([]);
             setSunTimes({ sunrise: '--:--', sunset: '--:--' });
@@ -1413,7 +1413,7 @@ const Home = ({ route, navigation }) => {
             } else if (item?.name == "Avaddha" || item?.name == "अवड्ढ" || item?.name == "અવધ") {
                 return event.id == "aYOxlpzRMwrX3gD7";
             } else if (item?.name == "Chovihar" || item?.name == "चौविहार" || item?.name == "ચોવિહાર") {
-                return event.id == "aYOxlpzRMwrX3gD7";
+                return event.id == "XOKlq3GKmwA1PWJ7";
             }
             else {
                 return null
@@ -1432,11 +1432,17 @@ const Home = ({ route, navigation }) => {
         navigation.navigate("PachhakkhanDetail", {
             pachhakkhanId: matchedObjectFromEvent.id,
             title,
+            titleHindi: matchedObjectFromEvent.name_hindi,
+            titleEnglish: matchedObjectFromEvent.name_english,
+            titleGujarati: matchedObjectFromEvent.name_gujarati,
             content: {
                 gujarati: matchedObjectFromEvent.pachakhan_details.details_gujarati,
                 hindi: matchedObjectFromEvent.pachakhan_details.details_hindi,
                 english: matchedObjectFromEvent.pachakhan_details.details_english,
                 detail: matchedObjectFromEvent.pachakhan_details.details_detail,
+                details_english: matchedObjectFromEvent.pachakhan_details.description_english,
+                details_hindi: matchedObjectFromEvent.pachakhan_details.description_hindi,
+                details_gujarati: matchedObjectFromEvent.pachakhan_details.description_gujarati,
                 audio: matchedObjectFromEvent.pachakhan_details.pachakhan_audio,
             },
         });
@@ -1575,16 +1581,16 @@ const Home = ({ route, navigation }) => {
                                     {kalyanakList.length ? (
                                         <View style={styles.godContainer}>
                                             <TouchableOpacity onPress={goPrev} style={styles.arrowButton}>
-    <Icon name="chevron-back" size={24} color="#fff" />
-</TouchableOpacity>
+                                                <Icon name="chevron-back" size={24} color="#fff" />
+                                            </TouchableOpacity>
 
                                             <Text style={styles.godName}>
                                                 {godName}{kalyanakName ? ` - ${kalyanakName} ${i18n.t('menu.kalyanak')}` : ''}
                                             </Text>
 
                                             <TouchableOpacity onPress={goNext} style={styles.arrowButton}>
-    <Icon name="chevron-forward" size={24} color="#fff" />
-</TouchableOpacity>
+                                                <Icon name="chevron-forward" size={24} color="#fff" />
+                                            </TouchableOpacity>
                                         </View>
                                     ) : null}
 
@@ -2026,22 +2032,22 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         padding: 5,
     },
-  godName: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    flex: 1,           
-    flexWrap: 'wrap',  
-    textAlign: 'center',
-    marginHorizontal: 5,
-},
+    godName: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+        flex: 1,
+        flexWrap: 'wrap',
+        textAlign: 'center',
+        marginHorizontal: 5,
+    },
 
-arrowButton: {
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-},
+    arrowButton: {
+        paddingHorizontal: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     timingsContainer: {
         borderRadius: 15,
         marginHorizontal: 15,
@@ -2091,12 +2097,12 @@ arrowButton: {
     timingName: {
         width: '50%',
         color: 'white',
-        fontSize: 13,
+        fontSize: 11,
     },
     timingTime: {
         width: '55%',
         color: 'white',
-        fontSize: 13,
+        fontSize: 11,
         fontWeight: 'bold',
         opacity: 0.8,
     },
