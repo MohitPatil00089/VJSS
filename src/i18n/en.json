@@ -22,6 +22,7 @@
     "choghadiya": "Choghadiya"
   },
   "jainCalendar": {
+    "tithiKshay": "Tithi Kshay",
     "today": "Today",
     "tithi": "Tithi",
     "shubh_day": "Shubh Day"
@@ -197,6 +198,8 @@
     "pachakkhan": "Pachakkhan",
     "tapAaradhana": "Tap / Aaradhana",
     "kalyanak": "Kalyanak",
+    "shubh":"Shubh Days",
+    "events":"Events",
     "tirthankars": "24 Tirthankars",
     "ourWebsite": "Our Website",
     "veerSamvat": "Veer Samvat 2545-2546"
