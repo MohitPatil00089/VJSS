@@ -110,7 +110,8 @@
     "weekDays": ["રવિ", "સોમ", "મંગળ", "બુધ", "ગુરુ", "શુક્ર", "શનિ"],
     "today": "આજ",
     "tithi": "તિથિ",
-    "shubh_day": "શુભ દિવસ"
+    "shubh_day": "શુભ દિવસ",
+    "tithiKshay": "તિથિ ક્ષય"
   },
   "tapAaradhana": {
     "ekasanu": "એકાસણું",
@@ -212,6 +213,8 @@
     "kalyanak": "કલ્યાણક",
     "tirthankars": "૨૪ તીર્થંકરો",
     "ourWebsite": "અમારી વેબસાઇટ",
+    "events":"પ્રસંગ",
+    "shubh": "શુભ દિવસો",
     "veerSamvat": "વીર સંવત 2545-2546"
   },
   "kalyanak": {

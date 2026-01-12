@@ -73,7 +73,7 @@ const KalyanakScreen = () => {
         kalyanakData.forEach(evt => {
             const y = convertNumber(new Date(evt.date_calendar).getFullYear(), language);
             if (!byYear[y]) byYear[y] = [];
-            byYear[y].push(evt);
+            byYear[y].push(evt);    
         });
 
         const flatList = [];
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#9E1B17',
+        backgroundColor: '#000000ff',
         paddingVertical: 15,
         paddingHorizontal: 10,
         elevation: 3,

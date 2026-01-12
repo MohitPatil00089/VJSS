@@ -13,7 +13,7 @@
   "about": "बारे में",
   "faq": "सामान्य प्रश्न",
   "tabs": {
-    "tithi": "महीने में तिथि",
+    "tithi": "नूतन तिथियाँ",
     "jain_calendar": "जैन कैलेंडर",
     "pachakkhan": "पच्चक्खाण",
     "choghadiya": "चौघड़िया"
@@ -175,7 +175,8 @@
     "weekDays": ["रवि", "सोम", "मंगल", "बुध", "गुरु", "शुक्र", "शनि"],
     "today": "आज",
     "tithi": "तिथि",
-    "shubh_day": "शुभ दिन"
+    "shubh_day": "शुभ दिन",
+    "tithiKshay": "तिथि क्षय"
   },
   "tapAaradhana": {
     "ekasanu": "एकासनु",
@@ -207,6 +208,8 @@
   "menu": {
     "jainCalendar": "जैन कैलेंडर",
     "tithisInMonth": "नुतन तिथि",
+    "shubh":"शुभ दिन",
+    "events":"प्रसंग",
     "pachakkhan": "पच्चक्खाण",
     "tapAaradhana": "तप / आराधना",
     "kalyanak": "कल्याणक",
