@@ -430,11 +430,11 @@ const Chart = React.memo(({ data: sunTimes = {}, timingData = [], choghadiya = {
                     </Defs>
 
                     <G mask="url(#chartMask)">
-                        {/* ONLY render filled segments during daytime */}
+
                         {isDaytime && segments}
                     </G>
 
-                    {/* MOVED OUTSIDE MASK - Border segments and dotted line render ALWAYS */}
+
                     {borderSegments}
 
                     <Path
@@ -549,6 +549,54 @@ const Home = ({ route, navigation }) => {
     const [globalData, setGlobalData] = useState({});
     const [dashboardData, setDashboardData] = useState({});
     const [choghadiyaData, setChoghadiyaData] = useState({ day: [], night: [] });
+
+
+    const isCurrentPachkhan = (item) => {
+        if (!isToday) return false;
+
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        const [hours, minutes] = item.time.split(':').map(Number);
+        const itemMinutes = hours * 60 + minutes;
+
+
+        const currentIndex = timingData.findIndex(t => t.time === item.time);
+        if (currentIndex === -1) return false;
+
+        const nextItem = timingData[currentIndex + 1];
+        if (!nextItem) return false;
+
+        const [nextHours, nextMinutes] = nextItem.time.split(':').map(Number);
+        const nextItemMinutes = nextHours * 60 + nextMinutes;
+
+        return nowMinutes >= itemMinutes && nowMinutes < nextItemMinutes;
+    };
+
+
+    const isCurrentChoghadiya = (item) => {
+        if (!isToday) return false;
+
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+        const [startTime, endTime] = item.time.split('-').map(t => t.trim());
+        const [startHours, startMinutes] = startTime.split(':').map(Number);
+        const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+        const startTotalMinutes = startHours * 60 + startMinutes;
+        let endTotalMinutes = endHours * 60 + endMinutes;
+
+        // Handle ranges that cross midnight
+        if (endTotalMinutes < startTotalMinutes) {
+            endTotalMinutes += 1440; // Add 24 hours in minutes
+            if (nowMinutes < startTotalMinutes) {
+                // Current time is past midnight
+                return nowMinutes + 1440 >= startTotalMinutes && nowMinutes + 1440 < endTotalMinutes;
+            }
+        }
+
+        return nowMinutes >= startTotalMinutes && nowMinutes < endTotalMinutes;
+    };
 
     const { city } = route.params || {};
     const [sunTimes, setSunTimes] = useState({
@@ -1142,93 +1190,98 @@ const Home = ({ route, navigation }) => {
                                         <>
                                             <View style={styles.timingsContainer}>
                                                 <View style={styles.column}>
-                                                    {timingData.slice(1, 4).map((item) => (
-                                                        <TouchableOpacity key={item.id} style={styles.timingItem}
-                                                            onPress={() => {
-                                                                handlePachhakkhanPress(item)
-                                                            }}
-                                                        >
-                                                            <View style={[
-                                                                styles.timingDot,
-                                                                {
-                                                                    backgroundColor: item.color
-                                                                }
-                                                            ]} >
-                                                                {item.isActive && isToday && <View style={styles.innerWhiteDot} />}
-                                                            </View>
-                                                            <View style={styles.timingTextContainer}>
-                                                                <Text style={styles.timingName}>{item.name}:</Text>
-                                                                <Text style={styles.timingTime}>
-                                                                    {formatTime(item.time, i18n.locale)}
-                                                                </Text>
-                                                            </View>
-                                                        </TouchableOpacity>
-                                                    ))}
+                                                    {timingData.slice(1, 4).map((item) => {
+                                                        const isCurrent = isCurrentPachkhan(item);
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={item.id}
+                                                                style={styles.timingItem}
+                                                                onPress={() => {
+                                                                    handlePachhakkhanPress(item);
+                                                                }}
+                                                            >
+                                                                <View style={[styles.timingDot, { backgroundColor: item.color }]}>
+                                                                    {isCurrent && <View style={styles.innerWhiteDot} />}
+                                                                </View>
+                                                                <View style={styles.timingTextContainer}>
+                                                                    <Text style={styles.timingName}>{item.name}:</Text>
+                                                                    <Text style={styles.timingTime}>
+                                                                        {formatTime(item.time, i18n.locale)}
+                                                                    </Text>
+                                                                </View>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    })}
                                                 </View>
                                                 <View style={styles.column}>
-                                                    {timingData.slice(4, 7).map((item) => (
-                                                        <TouchableOpacity key={item.id} style={styles.timingItem}
-                                                            onPress={() => {
-                                                                handlePachhakkhanPress(item)
-                                                            }}
-                                                        >
-                                                            <View style={[
-                                                                styles.timingDot,
-                                                                {
-                                                                    backgroundColor: item.color
-                                                                }
-                                                            ]} >
-                                                                {item.isActive && isToday && <View style={styles.innerWhiteDot} />}
-                                                            </View>
-                                                            <View style={styles.timingTextContainer}>
-                                                                <Text style={styles.timingName}>{item.name}:</Text>
-                                                                <Text style={styles.timingTime}>
-                                                                    {formatTime(item.time, i18n.locale)}
-                                                                </Text>
-                                                            </View>
-                                                        </TouchableOpacity>
-                                                    ))}
+                                                    {timingData.slice(4, 7).map((item) => {
+                                                        const isCurrent = isCurrentPachkhan(item);
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={item.id}
+                                                                style={styles.timingItem}
+                                                                onPress={() => {
+                                                                    handlePachhakkhanPress(item);
+                                                                }}
+                                                            >
+                                                                <View style={[styles.timingDot, { backgroundColor: item.color }]}>
+                                                                    {isCurrent && <View style={styles.innerWhiteDot} />}
+                                                                </View>
+                                                                <View style={styles.timingTextContainer}>
+                                                                    <Text style={styles.timingName}>{item.name}:</Text>
+                                                                    <Text style={styles.timingTime}>
+                                                                        {formatTime(item.time, i18n.locale)}
+                                                                    </Text>
+                                                                </View>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    })}
                                                 </View>
                                             </View>
                                         </>
                                     ) : (
+                                        // REPLACE the choghadiya tab section with this:
                                         <View style={styles.choghadiyaContainer}>
-                                            <TouchableOpacity style={{ flexDirection: 'row', justifyContent: 'center', alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('sun')}>
+                                            <TouchableOpacity
+                                                style={{ flexDirection: 'row', justifyContent: 'center', alignItems: "center", width: "15%" }}
+                                                onPress={() => setChoghadiyaActiveTab('sun')}
+                                            >
                                                 <Icon name={choghadiyaActiveTab == 'sun' ? "sunny" : "sunny-outline"} size={20} color="#ffffffff" />
                                                 {choghadiyaActiveTab == 'sun' && <Fontisto name="caret-right" size={20} color="#fff" />}
                                             </TouchableOpacity>
+
                                             <View style={{ alignItems: "center", paddingLeft: 10, width: "70%" }}>
-                                                {(choghadiyaActiveTab === 'sun'
-                                                    ? choghadiyaData.day
-                                                    : choghadiyaData.night
-                                                ).map((item, index) => (
-                                                    <View key={item.id} style={styles.choghadityaYimingItem}>
+                                                {(choghadiyaActiveTab === 'sun' ? choghadiyaData.day : choghadiyaData.night).map(
+                                                    (item, index) => {
+                                                        const isCurrent = isCurrentChoghadiya(item);
+                                                        return (
+                                                            <View key={item.id} style={styles.choghadityaYimingItem}>
+                                                                <View
+                                                                    style={[
+                                                                        styles.timingDot,
+                                                                        { backgroundColor: getChoghadiyaDotColor(item.name) },
+                                                                    ]}
+                                                                >
+                                                                    {isCurrent && <View style={styles.innerWhiteDot} />}
+                                                                </View>
 
-                                                        <View
-                                                            style={[
-                                                                styles.timingDot,
-                                                                { backgroundColor: getChoghadiyaDotColor(item.name) },
-                                                            ]}
-                                                        >
-                                                            {index === activeIndex && isToday && (
-                                                                <View style={styles.innerWhiteDot} />
-                                                            )}
-                                                        </View>
+                                                                <View style={styles.timingTextContainer}>
+                                                                    <Text style={styles.timingName}>{item.name}</Text>
+                                                                </View>
 
-                                                        <View style={styles.timingTextContainer}>
-                                                            <Text style={styles.timingName}>{item.name}</Text>
-                                                        </View>
-
-                                                        <Text style={styles.timingTime}>
-                                                            {formatTime(item.time, i18n.locale)}
-                                                        </Text>
-
-                                                    </View>
-                                                ))}
-
-
+                                                                <Text style={styles.timingTime}>
+                                                                    {formatTime(item.time, i18n.locale)}
+                                                                </Text>
+                                                            </View>
+                                                        );
+                                                    }
+                                                )}
                                             </View>
-                                            <TouchableOpacity style={{ flexDirection: 'row', justifyContent: "center", alignItems: "center", width: "15%" }} onPress={() => setChoghadiyaActiveTab('moon')}>
+
+                                            <TouchableOpacity
+                                                style={{ flexDirection: 'row', justifyContent: "center", alignItems: "center", width: "15%" }}
+                                                onPress={() => setChoghadiyaActiveTab('moon')}
+                                            >
                                                 {choghadiyaActiveTab != 'sun' && <Fontisto name="caret-left" size={20} color="#fff" />}
                                                 <Icon name={choghadiyaActiveTab != 'sun' ? "moon" : "moon-outline"} size={20} color="#ffffffff" />
                                             </TouchableOpacity>

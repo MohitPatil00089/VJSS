@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Image,
+    ScrollView
 } from 'react-native';
 import { getEventsForDate } from '../database/database';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -123,7 +124,7 @@ const JainCalendarScreen = ({ navigation }) => {
         loadMonthData(next);
     };
 
-    // builds the Jain month string exactly like you do in the cell
+
     const jainMonthRangeHeader = (data) => {
         if (!data || !data.length) return '';
 
@@ -265,6 +266,7 @@ const JainCalendarScreen = ({ navigation }) => {
                     <Ionicons name="language" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
+            <ScrollView>
 
             <View style={styles.header}>
                 <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
@@ -283,7 +285,7 @@ const JainCalendarScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Week Days Header */}
+
             {/* Week Days Header */}
             <View style={styles.weekDaysContainer}>
                 {i18n.t('date.fullWeekDays', { returnObjects: true }).map((day, index) => (
@@ -357,6 +359,7 @@ const JainCalendarScreen = ({ navigation }) => {
                 onClose={() => setShowLanguageModal(false)}
                 currentLang={language}
             />
+            </ScrollView>
         </SafeAreaView>
     );
 };
@@ -365,6 +368,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8F9FA',
+        marginBottom: 50,
     },
     mainHeader: {
         flexDirection: 'row',
