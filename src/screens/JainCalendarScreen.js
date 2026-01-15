@@ -78,7 +78,7 @@ const JainCalendarScreen = ({ navigation }) => {
             if (response && response.data) {
                 setCalendarData(response.data);
 
-                // ✅ Extract skipped (kshay) tithi
+                //Extract skipped (kshay) tithi
                 if (response.about_tithi && Array.isArray(response.about_tithi)) {
                     const skipped = response.about_tithi.filter(
                         item => item.type === 'skip'

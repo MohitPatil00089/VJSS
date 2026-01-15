@@ -42,27 +42,30 @@ const CHART_RADIUS = CHART_SIZE / 2;
 
 const getTimingColor = (timingName) => {
     const colorMap = {
-        'Sunrise': '#FF9500',
-        'Navkarshi': '#FFCC00',
-        'Porisi': '#00E676',
-        'Saddha Porisi': '#2979FF',
-        'Purimaddha': '#D500F9',
-        'Avaddha': '#FF3D00',
-        'Sunset': '#FF1744',
-        'सूर्योदय': '#FF9500',
-        'नवकारशी': '#FFCC00',
-        'पोरिसी': '#00E676',
-        'साड्ढ-पोरिसिं': '#2979FF',
-        'पुरिमड्ढ': '#D500F9',
-        'अवड्ढ': '#FF3D00',
-        'सूर्यास्त': '#FF1744',
-        'સૂર્યોદય': '#FF9500',
-        'નવકારશી': '#FFCC00',
-        'પોરિસિં': '#00E676',
-        'સાડ્ઢપોરિસિં': '#2979FF',
-        'પુરિમડ્ઢ': '#D500F9',
-        'અવધ': '#FF3D00',
-        'સૂર્યાસ્ત': '#FF1744'
+        'Sunrise': 'rgba(128, 0, 0, 0.9)',
+        'Navkarshi': '#eab202',
+        'Porisi': '#f8004a',
+        'Saddha Porisi': '#3c582b',
+        'Purimaddha': '#3f5492',
+        'Avaddha': '#c100c3',
+        'Chovihar': '#6a99c1',
+        'Sunset': 'rgba(128, 0, 0, 0.9)',
+        'सूर्योदय': 'rgba(128, 0, 0, 0.9)',
+        'नवकारशी': '#eab202',
+        'पोरिसी': '#f8004a',
+        'साड्ढ-पोरिसिं': '#3c582b',
+        'पुरिमड्ढ': '#3f5492',
+        'अवड्ढ': '#c100c3',
+        'चोविहार': '#6a99c1',
+        'सूर्यास्त': 'rgba(128, 0, 0, 0.9)',
+        'સૂર્યોદય': 'rgba(128, 0, 0, 0.9)',
+        'નવકારશી': '#eab202',
+        'પોરિસિં': '#f8004a',
+        'સાડ્ઢપોરિસિં': '#3c582b',
+        'પુરિમડ્ઢ': '#3f5492',
+        'અવધ': '#c100c3',
+        'ચોવિહાર': '#6a99c1',
+        'સૂર્યાસ્ત': 'rgba(128, 0, 0, 0.9)'
     };
 
     return colorMap[timingName] || '#A9A9A9';
@@ -239,6 +242,10 @@ const Chart = React.memo(({ data: sunTimes = {}, timingData = [], choghadiya = {
     let startAngle = 180;
 
     const createHalfCircleSegment = (startAngle, endAngle, color, index) => {
+  const label = choghadiyaData[index]?.label || '';
+  const isChovihar = /^(Chovihar|चोविहार|ચોવિહાર)$/.test(label);
+  const finalColor = isChovihar ? 'transperent' : color;
+
         const startRad = (startAngle * Math.PI) / 180;
         const endRad = (endAngle * Math.PI) / 180;
 
@@ -266,8 +273,8 @@ const Chart = React.memo(({ data: sunTimes = {}, timingData = [], choghadiya = {
             <Path
                 key={`segment-${index}`}
                 d={path}
-                fill={color}
-                stroke="white"
+                fill={finalColor}
+                // stroke="#000"
                 strokeWidth={0.5}
             />
         );
@@ -441,7 +448,7 @@ const Chart = React.memo(({ data: sunTimes = {}, timingData = [], choghadiya = {
                         d={`M ${centerX - dottedRadius} ${centerY}
                     A ${dottedRadius} ${dottedRadius} 0 0 1 ${centerX + dottedRadius} ${centerY}`}
                         fill="none"
-                        stroke="#FFFFFF"
+                        stroke="#ffffffff"
                         strokeOpacity={0.9}
                         strokeWidth={1}
                         strokeDasharray="3,4"
@@ -1050,11 +1057,22 @@ const Home = ({ route, navigation }) => {
         fetchTheme();
     }, []);
 
+    const getVeerSamvatString = () => {
+        if (!globalData?.vikram_samvat) return i18n.t('menu.veerSamvat');
+
+        const vs = parseInt(globalData.vikram_samvat.replace(/\D/g, ''), 10);
+        const vsNext = vs + 1;
+        const vsLocal = convertDigitsOnly(vs, i18n.locale);
+        const vsNextLocal = convertDigitsOnly(vsNext, i18n.locale);
+        return i18n.t('menu.vikram_year', { vs1: vsLocal, vs2: vsNextLocal });
+    };
+
     const menuItems = [
         {
             id: '1',
             title: i18n.t('menu.jainCalendar'),
-            subtitle: i18n.t('menu.veerSamvat'),
+            subtitle: getVeerSamvatString(),
+            // subtitle: i18n.t('menu.veerSamvat'),
             onPress: () => navigation.navigate('JainCalendar')
         },
         { id: '2', title: i18n.t('menu.tithisInMonth'), onPress: () => navigation.navigate('tithisInMonth') },
@@ -1320,7 +1338,7 @@ const Home = ({ route, navigation }) => {
                                                     {i18n.t('menu.jainCalendar')}
                                                 </Text>
                                                 <Text style={styles.menuItemSubtitle}>
-                                                    {i18n.t('menu.veerSamvat')}
+                                                    {getVeerSamvatString()}
                                                 </Text>
                                             </View>
                                             <Icon name="chevron-forward" size={20} color="#fff" />

@@ -26,8 +26,8 @@
     "today": "Today",
     "tithi": "Tithi",
     "shubh_day": "Shubh Day"
-  },  
-   "tirthankarNames": {
+  },
+  "tirthankarNames": {
     "Shree Adinath Bhagwan": "Shree Adinath Bhagwan",
     "Shree Aadinath": "Shree Aadinath Bhagwan",
     "Shree Ajitnath Bhagwan": "Shree Ajitnath Bhagwan",
@@ -74,7 +74,7 @@
     "Shree Parshwnath": "Shree Parshwnath Bhagwan",
     "Shree Mahavir Swami": "Shree Mahavir Swami"
   },
-    "choghadiya": {
+  "choghadiya": {
     "amrut": "Amrut",
     "shubh": "Shubh",
     "rog": "Rog",
@@ -83,32 +83,32 @@
     "labh": "Labh"
   },
   "tirthankar": {
-  "1": "Shri Adinath Bhagwan",
-  "2": "Shri Ajitnath Bhagwan",
-  "3": "Shri Sambhavnath Bhagwan",
-  "4": "Shri Abhinandan Swami",
-  "5": "Shri Sumatinath Bhagwan",
-  "6": "Shri Padmaprabhu Swami",
-  "7": "Shri Suparshva Bhagwan",
-  "8": "Shri Chandraprabhu Swami",
-  "9": "Shri Suvidhinath Swami",
-  "10": "Shri Shitalnath Bhagwan",
-  "11": "Shri Shreyanshnath Swami",
-  "12": "Shri Vasupujya Swami",
-  "13": "Shri Vimalnath Bhagwan",
-  "14": "Shri Anantnath Bhagwan",
-  "15": "Shri Dharmanath Bhagwan",
-  "16": "Shri Shantinath Bhagwan",
-  "17": "Shri Kunthunath Bhagwan",
-  "18": "Shri Arnath Bhagwan",
-  "19": "Shri Mallinath Bhagwan",
-  "20": "Shri Munisuvrat Swami",
-  "21": "Shri Naminath Bhagwan",
-  "22": "Shri Neminath Bhagwan",
-  "23": "Shri Parshvanath Bhagwan",
-  "24": "Shri Mahavir Swami"
-},
-"tirthankara":"Tirthankara",
+    "1": "Shri Adinath Bhagwan",
+    "2": "Shri Ajitnath Bhagwan",
+    "3": "Shri Sambhavnath Bhagwan",
+    "4": "Shri Abhinandan Swami",
+    "5": "Shri Sumatinath Bhagwan",
+    "6": "Shri Padmaprabhu Swami",
+    "7": "Shri Suparshva Bhagwan",
+    "8": "Shri Chandraprabhu Swami",
+    "9": "Shri Suvidhinath Swami",
+    "10": "Shri Shitalnath Bhagwan",
+    "11": "Shri Shreyanshnath Swami",
+    "12": "Shri Vasupujya Swami",
+    "13": "Shri Vimalnath Bhagwan",
+    "14": "Shri Anantnath Bhagwan",
+    "15": "Shri Dharmanath Bhagwan",
+    "16": "Shri Shantinath Bhagwan",
+    "17": "Shri Kunthunath Bhagwan",
+    "18": "Shri Arnath Bhagwan",
+    "19": "Shri Mallinath Bhagwan",
+    "20": "Shri Munisuvrat Swami",
+    "21": "Shri Naminath Bhagwan",
+    "22": "Shri Neminath Bhagwan",
+    "23": "Shri Parshvanath Bhagwan",
+    "24": "Shri Mahavir Swami"
+  },
+  "tirthankara": "Tirthankara",
   "date": {
     "today": "Today",
     "month": {
@@ -138,8 +138,18 @@
       "adhik jeth": "Adhik Jeth"
     },
     "monthNames": [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
     ],
     "extra": {
       "poonam": "Poonam",
@@ -155,7 +165,15 @@
     "purnima": "Purnima",
     "shukla": "Shukla",
     "krishna": "Krishna",
-    "fullWeekDays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    "fullWeekDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ]
   },
   "tapAaradhana": {
     "ekasanu": "Ekasanu",
@@ -193,16 +211,18 @@
     "chovihar": "Chovihar"
   },
   "menu": {
+    "veerSamvat": "Veer Samvat",
+    "vikram_year": "Veer Samvat %{vs1}-%{vs2}",
     "jainCalendar": "Jain Calendar",
     "tithisInMonth": "Tithis in Month",
     "pachakkhan": "Pachakkhan",
     "tapAaradhana": "Tap / Aaradhana",
     "kalyanak": "Kalyanak",
-    "shubh":"Shubh Days",
-    "events":"Events",
+    "shubh": "Shubh Days",
+    "events": "Events",
     "tirthankars": "24 Tirthankars",
     "ourWebsite": "Our Website",
-    "veerSamvat": "Veer Samvat 2545-2546"
+    "veerSamvat_": "Veer Samvat 2545-2546"
   },
   "kalyanak": {
     "moksha": "Moksha/Nirvan Kalyanaka",
