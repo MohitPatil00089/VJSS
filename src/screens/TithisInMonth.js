@@ -43,12 +43,12 @@ const TithisInMonth = ({ navigation }) => {
 
     useEffect(() => {
         let isMounted = true;
-       
+
         const loadAllData = async () => {
             try {
                 setLoading(true);
                 setApiError(null);
-               
+
                 const selectedCityStr = await AsyncStorage.getItem('selectedCity');
                 const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
                     lat: '22.2726554',
@@ -56,7 +56,7 @@ const TithisInMonth = ({ navigation }) => {
                     country_code: 'IN'
                 };
                 const allMonthsData = [];
-               
+
                 const festivalJson = await getallTithiFestivals();
                 const festivalData = festivalJson?.data || [];
                 const lookup = {};
@@ -71,21 +71,21 @@ const TithisInMonth = ({ navigation }) => {
                 if (isMounted) {
                     setFestivalLookup(lookup);
                 }
-               
+
                 for (let month = 1; month <= 12; month++) {
                     const monthStr = String(month).padStart(2, '0');
-                   
+
                     const response = await getFrontCalendar(
                         'multiple', currentYear, monthStr, monthStr, 'gregorian',
                         selectedCity.lat.toString(), selectedCity.long.toString(),
                         selectedCity.country_code || 'IN', '2082'
                     );
-                   
+
                     if (response?.data && Array.isArray(response.data)) {
                         allMonthsData.push(...response.data);
                     }
                 }
-               
+
                 if (isMounted) {
                     setCalendarData(allMonthsData);
                 }
@@ -100,9 +100,9 @@ const TithisInMonth = ({ navigation }) => {
                 }
             }
         };
-       
+
         loadAllData();
-       
+
         return () => { isMounted = false; };
     }, []);
 
@@ -132,7 +132,7 @@ const TithisInMonth = ({ navigation }) => {
         data.forEach((item) => {
             const englishMonth = item.en_greg_month;
             const monthKey = `${englishMonth} ${item.year}`;
-            
+
             if (!monthMap[monthKey]) {
                 monthMap[monthKey] = {
                     displayTitle: {
@@ -143,25 +143,25 @@ const TithisInMonth = ({ navigation }) => {
                     data: []
                 };
             }
-            
+
             let festivalName = item.en_festival;
             if (lang === 'gu') festivalName = item.gu_festival;
             else if (lang === 'hi') festivalName = item.hi_festival;
-            
+
             monthMap[monthKey].data.push({
                 title: festivalName,
                 date: `${item.day.padStart(2, "0")}/${getMonthNumber(englishMonth)}/${item.year}`,
                 dateString: `${item.year}-${getMonthNumber(englishMonth)}-${item.day.padStart(2, "0")}`
             });
         });
-        
+
         const sortedKeys = Object.keys(monthMap).sort((a, b) => {
             const [monthA, yearA] = a.split(" ");
             const [monthB, yearB] = b.split(" ");
             if (yearA !== yearB) return yearA - yearB;
             return monthToNumber[monthA] - monthToNumber[monthB];
         });
-        
+
         return sortedKeys.map(key => ({
             title: monthMap[key].displayTitle[lang],
             data: monthMap[key].data
@@ -180,9 +180,9 @@ const TithisInMonth = ({ navigation }) => {
             setShubhDaysError(null);
             const festivalJson = await getallTithiFestivals();
             const data = festivalJson?.data || [];
-            
+
             let filtered = data.filter((item) => item.shubh_din === 1) || [];
-            
+
             filtered.sort((a, b) => {
                 if (a.year !== b.year) return a.year - b.year;
                 const monthA = monthToNumber[a.en_greg_month];
@@ -190,7 +190,7 @@ const TithisInMonth = ({ navigation }) => {
                 if (monthA !== monthB) return monthA - monthB;
                 return parseInt(a.day) - parseInt(b.day);
             });
-            
+
             setShubhDaysData(formatShubhDaysByMonth(filtered, i18n.locale));
         } catch (error) {
             console.error("Shubh Days API Error:", error);
@@ -205,7 +205,7 @@ const TithisInMonth = ({ navigation }) => {
         data.forEach((item) => {
             const englishMonth = item.en_greg_month;
             const monthKey = `${englishMonth} ${item.year}`;
-            
+
             if (!monthMap[monthKey]) {
                 monthMap[monthKey] = {
                     displayTitle: {
@@ -216,19 +216,19 @@ const TithisInMonth = ({ navigation }) => {
                     data: []
                 };
             }
-            
+
             const gujMonth = lang === 'gu' ? item.gu_guj_month :
-                             lang === 'hi' ? item.hi_guj_month :
-                             item.en_guj_month;
-            
+                lang === 'hi' ? item.hi_guj_month :
+                    item.en_guj_month;
+
             const paksha = lang === 'gu' ? item.gu_paksha :
-                           lang === 'hi' ? item.hi_paksha :
-                           item.en_paksha;
-            
+                lang === 'hi' ? item.hi_paksha :
+                    item.en_paksha;
+
             const tithiNumber = lang === 'gu' ? item.gu_tithi :
-                                lang === 'hi' ? item.hi_tithi :
-                                item.en_tithi;
-            
+                lang === 'hi' ? item.hi_tithi :
+                    item.en_tithi;
+
             monthMap[monthKey].data.push({
                 gujMonth,
                 paksha,
@@ -240,14 +240,14 @@ const TithisInMonth = ({ navigation }) => {
                 dateString: `${item.year}-${getMonthNumber(englishMonth)}-${item.day.padStart(2, "0")}`
             });
         });
-        
+
         const sortedKeys = Object.keys(monthMap).sort((a, b) => {
             const [monthA, yearA] = a.split(" ");
             const [monthB, yearB] = b.split(" ");
             if (yearA !== yearB) return yearA - yearB;
             return monthToNumber[monthA] - monthToNumber[monthB];
         });
-        
+
         return sortedKeys.map(key => ({
             title: monthMap[key].displayTitle[lang],
             data: monthMap[key].data
@@ -260,28 +260,28 @@ const TithisInMonth = ({ navigation }) => {
 
     const isTithiHighlighted = (item) => {
         return item.tithi === '8' ||
-               item.tithi === '14' ||
-               (item.tithi === '5' && item.paksha_type?.toLowerCase() === 'sud');
+            item.tithi === '14' ||
+            (item.tithi === '5' && item.paksha_type?.toLowerCase() === 'sud');
     };
 
     const getDisplayData = (item) => {
         const isEnglish = i18n.locale === 'en';
         const isGujarati = i18n.locale === 'gu';
-       
+
         const gujMonth = isEnglish ? item.guj_month_english_name :
-                        isGujarati ? item.guj_month_gujarati_name :
-                        item.guj_month_hindi_name;
-       
+            isGujarati ? item.guj_month_gujarati_name :
+                item.guj_month_hindi_name;
+
 
         const dateKey = `${item.year}-${String(item.month).padStart(2, '0')}-${String(item.day).padStart(2, '0')}`;
         const pakshaFromApi = festivalLookup[dateKey]?.[i18n.locale];
         const paksha = pakshaFromApi || item.paksha_type || '';
-       
+
         const tithiNumber = item.tithi;
         const monthName = isEnglish ? item.gregorian_english_month_name :
-                         isGujarati ? item.gregorian_gujarati_month_name :
-                         item.gregorian_hindi_month_name;
-       
+            isGujarati ? item.gregorian_gujarati_month_name :
+                item.gregorian_hindi_month_name;
+
         return {
             gujMonth,
             paksha,
@@ -323,7 +323,7 @@ const TithisInMonth = ({ navigation }) => {
     const convertNumber = (num, lang) => {
         if (!num) return '';
         const numStr = num.toString();
-        
+
         if (lang === 'gu') {
             return numStr.replace(/[0-9]/g, d => '૦૧૨૩૪૫૬૭૮૯'[d]);
         } else if (lang === 'hi') {
@@ -401,7 +401,7 @@ const TithisInMonth = ({ navigation }) => {
                                 <Text style={styles.monthHeader}>{section.title}</Text>
                             )}
                             renderItem={({ item }) => (
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={styles.festivalCard}
                                     onPress={() => handleCardPress(item.dateString)}
                                 >
@@ -448,7 +448,7 @@ const TithisInMonth = ({ navigation }) => {
                                 <Text style={styles.monthHeader}>{section.title}</Text>
                             )}
                             renderItem={({ item }) => (
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={styles.shubhDayCard}
                                     onPress={() => handleCardPress(item.dateString)}
                                 >
@@ -498,10 +498,10 @@ const TithisInMonth = ({ navigation }) => {
                                     const isEnglish = i18n.locale === 'en';
                                     const isGujarati = i18n.locale === 'gu';
                                     const monthName = isEnglish ? items[0]?.gregorian_english_month_name :
-                                                    isGujarati ? items[0]?.gregorian_gujarati_month_name :
-                                                    items[0]?.gregorian_hindi_month_name || 'Month';
+                                        isGujarati ? items[0]?.gregorian_gujarati_month_name :
+                                            items[0]?.gregorian_hindi_month_name || 'Month';
                                     const year = items[0]?.year || currentYear;
-                                    
+
                                     return (
                                         <View key={monthNum}>
                                             <Text style={styles.monthSectionTitle}>

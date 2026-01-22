@@ -242,9 +242,9 @@ const Chart = React.memo(({ data: sunTimes = {}, timingData = [], choghadiya = {
     let startAngle = 180;
 
     const createHalfCircleSegment = (startAngle, endAngle, color, index) => {
-  const label = choghadiyaData[index]?.label || '';
-  const isChovihar = /^(Chovihar|चोविहार|ચોવિહાર)$/.test(label);
-  const finalColor = isChovihar ? 'transperent' : color;
+        const label = choghadiyaData[index]?.label || '';
+        const isChovihar = /^(Chovihar|चोविहार|ચોવિહાર)$/.test(label);
+        const finalColor = isChovihar ? 'transperent' : color;
 
         const startRad = (startAngle * Math.PI) / 180;
         const endRad = (endAngle * Math.PI) / 180;
@@ -1145,21 +1145,22 @@ const Home = ({ route, navigation }) => {
                             </View>
 
                             <View style={styles.scrollContainer}>
-                                <TouchableOpacity style={styles.bellIcon} onPress={() => navigation.navigate('Notification')}>
-                                    <Icon name="notifications" size={24} color="white" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => setShowLanguageModal(true)}
-                                    activeOpacity={0.7}
-                                    style={styles.languageIcon}
-                                >
-                                    <Icon name="language" size={24} color="white" />
-                                </TouchableOpacity>
                                 <ScrollView
                                     style={styles.scrollView}
                                     contentContainerStyle={[styles.content, styles.scrollContent]}
                                     showsVerticalScrollIndicator={false}
                                 >
+
+                                    <TouchableOpacity style={styles.bellIcon} onPress={() => navigation.navigate('Notification')}>
+                                        <Icon name="notifications" size={24} color="white" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => setShowLanguageModal(true)}
+                                        activeOpacity={0.7}
+                                        style={styles.languageIcon}
+                                    >
+                                        <Icon name="language" size={24} color="white" />
+                                    </TouchableOpacity>
                                     <Chart
                                         data={sunTimes}
                                         timingData={timingData}
@@ -1308,7 +1309,8 @@ const Home = ({ route, navigation }) => {
                                     <View style={{
                                         backgroundColor: 'rgba(128, 0, 0,0.6)',
                                     }}>
-                                        <View style={styles.timingsHeader}>
+                                        <TouchableOpacity style={styles.timingsHeader} onPress={() => { const m = moment(selectedDate); navigation.navigate('JainCalendar', { day: m.date(), month: m.month() + 1, year: m.year() }); }}>
+                                            {/* <TouchableOpacity style={styles.timingsHeader} onPress={() => navigation.navigate('JainCalendar')}> */}
                                             <Text style={styles.todayText}>
                                                 {moment(selectedDate).isSame(moment(), 'day')
                                                     ? i18n.t('date.today')
@@ -1327,7 +1329,7 @@ const Home = ({ route, navigation }) => {
                                             <Text style={styles.dateText}>
                                                 {i18n.locale == "en" ? globalData.guj_month_english_name : i18n.locale == "gu" ? globalData.guj_month_gujarati_name : globalData.guj_month_hindi_name} {" "}{i18n.t(`date.${globalData.paksha_type?.toLowerCase()}`)} {" "}{convertDigitsOnly(globalData.tithi, i18n.locale)}
                                             </Text>
-                                        </View>
+                                        </TouchableOpacity>
 
                                         <TouchableOpacity
                                             style={styles.menuItem}
@@ -1642,15 +1644,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         flexDirection: 'row',
-        paddingVertical: 10,
+        paddingVertical: 5,
         marginTop: 15,
         marginBottom: 10,
-        padding: 5,
+        padding: 2,
     },
     godName: {
         color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 12,
         marginBottom: 5,
         flex: 1,
         flexWrap: 'wrap',
@@ -1753,7 +1754,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     footerButton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backgroundColor: 'rgba(128, 0, 0, 0.9)',
         paddingVertical: 10,
         width: "49%",
         paddingHorizontal: 20,
@@ -1762,9 +1763,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     footerButtonText: {
-        color: 'rgba(128, 0, 0, 0.9)',
-        fontSize: 14,
-        fontWeight: '500',
+        color: '#fff',
+        fontWeight: 'bold',
+        // color: 'rgba(128, 0, 0, 0.27)',
+        fontSize: 20,
     },
     modalOverlay: {
         flex: 1,
