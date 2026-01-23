@@ -16,6 +16,7 @@ import i18n from '../i18n/i18n';
 import English from '../i18n/en.json';
 import Gujarati from '../i18n/gu.json';
 import Hindi from '../i18n/hi.json';
+import { convertJainDateNumber, formatMonthYear, convertDigitsOnly } from '../utils/numberConverter';
 import { getFrontCalendar, getallTithiFestivals } from '../component/global';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LanguageSelectorModal from '../component/LanguageSelectorModal';
@@ -39,7 +40,28 @@ const TithisInMonth = ({ navigation }) => {
     const [shubhDaysData, setShubhDaysData] = useState([]);
     const [shubhDaysLoading, setShubhDaysLoading] = useState(false);
     const [shubhDaysError, setShubhDaysError] = useState(null);
-    const currentYear = new Date().getFullYear().toString();
+    const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+    const handlePrevMonth = () => {
+        if (currentMonth === 1) {
+            setCurrentMonth(12);
+            setCurrentYear(prev => prev - 1);
+        } else {
+            setCurrentMonth(prev => prev - 1);
+        }
+    };
+
+    const handleNextMonth = () => {
+        if (currentMonth === 12) {
+            setCurrentMonth(1);
+            setCurrentYear(prev => prev + 1);
+        } else {
+            setCurrentMonth(prev => prev + 1);
+        }
+    };
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
     useEffect(() => {
         let isMounted = true;
@@ -48,6 +70,7 @@ const TithisInMonth = ({ navigation }) => {
             try {
                 setLoading(true);
                 setApiError(null);
+                setCalendarData([]);
 
                 const selectedCityStr = await AsyncStorage.getItem('selectedCity');
                 const selectedCity = selectedCityStr ? JSON.parse(selectedCityStr) : {
@@ -57,7 +80,7 @@ const TithisInMonth = ({ navigation }) => {
                 };
                 const allMonthsData = [];
 
-                const festivalJson = await getallTithiFestivals();
+                const festivalJson = await getallTithiFestivals(currentMonth, currentYear);
                 const festivalData = festivalJson?.data || [];
                 const lookup = {};
                 festivalData.forEach(item => {
@@ -72,18 +95,16 @@ const TithisInMonth = ({ navigation }) => {
                     setFestivalLookup(lookup);
                 }
 
-                for (let month = 1; month <= 12; month++) {
-                    const monthStr = String(month).padStart(2, '0');
+                const monthStr = String(currentMonth).padStart(2, '0');
 
-                    const response = await getFrontCalendar(
-                        'multiple', currentYear, monthStr, monthStr, 'gregorian',
-                        selectedCity.lat.toString(), selectedCity.long.toString(),
-                        selectedCity.country_code || 'IN', '2082'
-                    );
+                const response = await getFrontCalendar(
+                    'multiple', currentYear.toString(), monthStr, monthStr, 'gregorian',
+                    selectedCity.lat.toString(), selectedCity.long.toString(),
+                    selectedCity.country_code || 'IN', '2082'
+                );
 
-                    if (response?.data && Array.isArray(response.data)) {
-                        allMonthsData.push(...response.data);
-                    }
+                if (response?.data && Array.isArray(response.data)) {
+                    allMonthsData.push(...response.data);
                 }
 
                 if (isMounted) {
@@ -103,8 +124,12 @@ const TithisInMonth = ({ navigation }) => {
 
         loadAllData();
 
+        // Reload other tabs data when month changes
+        if (activeTab === 'Events') fetchFestivalData();
+        if (activeTab === 'Shubh Days') fetchShubhDin();
+
         return () => { isMounted = false; };
-    }, []);
+    }, [currentMonth, currentYear]);
 
     useEffect(() => {
         if (activeTab === 'Events') {
@@ -116,7 +141,7 @@ const TithisInMonth = ({ navigation }) => {
         try {
             setFestivalsLoading(true);
             setFestivalsError(null);
-            const festivalJson = await getallTithiFestivals();
+            const festivalJson = await getallTithiFestivals(currentMonth, currentYear);
             const data = festivalJson?.data || [];
             setFestivalsData(formatFestivalsByMonth(data, i18n.locale));
         } catch (error) {
@@ -129,7 +154,17 @@ const TithisInMonth = ({ navigation }) => {
 
     const formatFestivalsByMonth = (data, lang) => {
         const monthMap = {};
+
         data.forEach((item) => {
+            /* 1. pick the right field */
+            let festivalName = item.en_festival;
+            if (lang === 'gu') festivalName = item.gu_festival;
+            else if (lang === 'hi') festivalName = item.hi_festival;
+
+            /* 2. skip if the chosen language has no name */
+            if (!festivalName) return;
+
+            /* 3. build the section exactly like before */
             const englishMonth = item.en_greg_month;
             const monthKey = `${englishMonth} ${item.year}`;
 
@@ -138,34 +173,32 @@ const TithisInMonth = ({ navigation }) => {
                     displayTitle: {
                         en: `${englishMonth} ${item.year}`,
                         gu: `${item.gu_greg_month} ${item.year}`,
-                        hi: `${item.hi_greg_month} ${item.year}`
+                        hi: `${item.hi_greg_month} ${item.year}`,
                     },
-                    data: []
+                    data: [],
                 };
             }
 
-            let festivalName = item.en_festival;
-            if (lang === 'gu') festivalName = item.gu_festival;
-            else if (lang === 'hi') festivalName = item.hi_festival;
-
             monthMap[monthKey].data.push({
                 title: festivalName,
-                date: `${item.day.padStart(2, "0")}/${getMonthNumber(englishMonth)}/${item.year}`,
-                dateString: `${item.year}-${getMonthNumber(englishMonth)}-${item.day.padStart(2, "0")}`
+                date: `${item.day.padStart(2, '0')}/${getMonthNumber(englishMonth)}/${item.year}`,
+                dateString: `${item.year}-${getMonthNumber(englishMonth)}-${item.day.padStart(2, '0')}`,
             });
         });
 
+        /* 4. sort the sections (same logic you already had) */
         const sortedKeys = Object.keys(monthMap).sort((a, b) => {
-            const [monthA, yearA] = a.split(" ");
-            const [monthB, yearB] = b.split(" ");
+            const [monthA, yearA] = a.split(' ');
+            const [monthB, yearB] = b.split(' ');
             if (yearA !== yearB) return yearA - yearB;
             return monthToNumber[monthA] - monthToNumber[monthB];
         });
-
-        return sortedKeys.map(key => ({
+        const sections = sortedKeys.map((key) => ({
             title: monthMap[key].displayTitle[lang],
-            data: monthMap[key].data
+            data: monthMap[key].data,
         }));
+
+        return sections.length ? sections : [];
     };
 
     useEffect(() => {
@@ -178,7 +211,7 @@ const TithisInMonth = ({ navigation }) => {
         try {
             setShubhDaysLoading(true);
             setShubhDaysError(null);
-            const festivalJson = await getallTithiFestivals();
+            const festivalJson = await getallTithiFestivals(currentMonth, currentYear);
             const data = festivalJson?.data || [];
 
             let filtered = data.filter((item) => item.shubh_din === 1) || [];
@@ -344,7 +377,19 @@ const TithisInMonth = ({ navigation }) => {
                     <Ionicons name="language" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
-
+            <View style={styles.header}>
+                <TouchableOpacity onPress={handlePrevMonth} style={styles.navButton}>
+                    <Icon name="chevron-left" size={24} color="#333" />
+                </TouchableOpacity>
+                <View style={{ alignItems: 'center' }}>
+                    <Text style={styles.monthHeader}>
+                        {i18n.t(`jainCalendar.months.${currentMonth}`)} {convertNumber(currentYear, i18n.locale)}
+                    </Text>
+                </View>
+                <TouchableOpacity onPress={handleNextMonth} style={styles.navButton}>
+                    <Icon name="chevron-right" size={24} color="#333" />
+                </TouchableOpacity>
+            </View>
             <View style={styles.bottomTabBar}>
                 <TouchableOpacity
                     style={[styles.tabButton, activeTab === 'Tithi' && styles.activeTab]}
@@ -391,6 +436,10 @@ const TithisInMonth = ({ navigation }) => {
                                 <Text style={styles.retryButtonText}>Retry</Text>
                             </TouchableOpacity>
                         </View>
+                    ) : festivalsData.length === 0 ? (
+                        <View style={styles.noEventsWrapper}>
+                            <Text style={styles.noEventsText}>No Events in this month</Text>
+                        </View>
                     ) : (
                         <SectionList
                             sections={festivalsData}
@@ -398,7 +447,7 @@ const TithisInMonth = ({ navigation }) => {
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={styles.sectionListContent}
                             renderSectionHeader={({ section }) => (
-                                <Text style={styles.monthHeader}>{section.title}</Text>
+                                <Text></Text>
                             )}
                             renderItem={({ item }) => (
                                 <TouchableOpacity
@@ -411,7 +460,7 @@ const TithisInMonth = ({ navigation }) => {
 
                                     <View style={styles.center}>
                                         <Text style={styles.festivalText}>{item.title}</Text>
-                                        <Text style={styles.dateText}>{item.date}</Text>
+                                        <Text style={styles.dateText}>{convertDigitsOnly(item.date, i18n.locale)}</Text>
                                     </View>
 
                                     <View style={styles.right}>
@@ -445,7 +494,7 @@ const TithisInMonth = ({ navigation }) => {
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={styles.sectionListContent}
                             renderSectionHeader={({ section }) => (
-                                <Text style={styles.monthHeader}>{section.title}</Text>
+                                <Text></Text>
                             )}
                             renderItem={({ item }) => (
                                 <TouchableOpacity
@@ -463,7 +512,7 @@ const TithisInMonth = ({ navigation }) => {
                                                 {item.gujMonth} {item.paksha} {item.tithiNumber}
                                             </Text>
                                             <Text style={styles.shubhDayDateText}>
-                                                {item.day}/{item.monthNum}/{item.year}
+                                                {convertDigitsOnly(item.day, i18n.locale)}/{convertDigitsOnly(item.monthNum, i18n.locale)}/{convertDigitsOnly(item.year, i18n.locale)}
                                             </Text>
                                         </View>
                                         <Icon name="chevron-right" size={24} color="#9E1B17" style={styles.rightArrow} />
@@ -504,9 +553,6 @@ const TithisInMonth = ({ navigation }) => {
 
                                     return (
                                         <View key={monthNum}>
-                                            <Text style={styles.monthSectionTitle}>
-                                                {monthName} {convertNumber(year, i18n.locale)}
-                                            </Text>
                                             {items.map((d) => {
                                                 const data = getDisplayData(d);
                                                 return (
@@ -519,10 +565,10 @@ const TithisInMonth = ({ navigation }) => {
                                                             <View style={styles.greenDot} />
                                                             <View style={styles.cardText}>
                                                                 <Text style={styles.shubhDayMainText}>
-                                                                    {data.gujMonth} {data.paksha} {data.tithiNumber}
+                                                                    {data.gujMonth} {data.paksha} {convertDigitsOnly(data.tithiNumber, i18n.locale)}
                                                                 </Text>
                                                                 <Text style={styles.shubhDayDateText}>
-                                                                    {data.day}/{data.monthNum}/{data.year}
+                                                                    {convertNumber(data.day, i18n.locale)}/{convertNumber(data.monthNum, i18n.locale)}/{convertNumber(data.year, i18n.locale)}
                                                                 </Text>
                                                             </View>
                                                             <Icon name="chevron-right" size={24} color="#9E1B17" style={styles.rightArrow} />
@@ -560,6 +606,23 @@ const styles = StyleSheet.create({
         backgroundColor: '#060606ff',
         paddingVertical: 15,
         paddingHorizontal: 15,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        backgroundColor: '#d8d8d8',
+        borderBottomWidth: 1,
+        borderBottomColor: '#d8d8d8'
+    },
+    navButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
+        backgroundColor: '#F5F5F5'
     },
     backButton: {
         padding: 5,
@@ -718,6 +781,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
     },
+    noEventsWrapper: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 60,
+    },
     noEventsText: {
         fontSize: 15,
         color: '#999',
@@ -725,7 +794,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     monthHeader: {
-        fontSize: 22,
+        fontSize: 16,
         fontWeight: '700',
         color: '#1A1A1A',
         marginVertical: 14,

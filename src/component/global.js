@@ -67,10 +67,11 @@ export const getFrontCalendar = async (flag, year, month, month_in_gujarati, typ
     }
 };
 
-export const getallTithiFestivals = async () => {
+export const getallTithiFestivals = async (month, year) => {
     try {
+        console.log(`Fetching Tithi Festivals for Month: ${month}, Year: ${year}`);
         const response = await fetch(
-            `${baseUrl}get-all-tithi-festivals`,
+            `${baseUrl}get-all-tithi-festivals?page=1&per_page=31&month=${month}&year=${year}`,
             {
                 method: 'GET',
                 headers: {

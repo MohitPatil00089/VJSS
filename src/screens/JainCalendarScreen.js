@@ -169,13 +169,18 @@ const JainCalendarScreen = ({ navigation, route }) => {
                     </Text>
                 </View>
                 <Text style={[styles.jainDateSmall, isSelected && styles.selectedJainText]}>
-                    {i18n.locale === 'en' ? item.guj_month_english_name
-                        : i18n.locale === 'gu' ? item.guj_month_gujarati_name
-                            : item.guj_month_hindi_name}
-                    {` (`}{i18n.t(`date.${(item.paksha_type)?.toLowerCase()}`)}{`)`}
-                </Text>
-                <Text style={[styles.jainDateSmall, isSelected && styles.selectedJainText]}>
-                    {convertJainDateNumber(item.day, i18n.locale)}/{convertJainDateNumber(item.month, i18n.locale)}
+                    {item.tithi === '1'
+                        ? `${i18n.locale === 'en'
+                            ? item.guj_month_english_name
+                            : i18n.locale === 'gu'
+                                ? item.guj_month_gujarati_name
+                                : item.guj_month_hindi_name} (${i18n.t(
+                                    `date.${item.paksha_type?.toLowerCase()}`
+                                )})`
+                        : `${convertJainDateNumber(item.day, i18n.locale)}/${convertJainDateNumber(
+                            item.month,
+                            i18n.locale
+                        )}`}
                 </Text>
             </TouchableOpacity>
         );
