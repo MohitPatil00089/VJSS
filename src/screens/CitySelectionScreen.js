@@ -71,7 +71,7 @@ const CitySelectionScreen = ({ navigation }) => {
   };
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.textContainer}>
         <Text style={styles.loadingText}>Loading cities...</Text>
       </View>
     );
@@ -130,12 +130,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "white",
   },
+  textContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   LoadingText: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     fontSize: 16,
-    color: "white",
+    textAlign: "center",
+    color: "#fff",
   },
   searchContainer: {
     backgroundColor: "#9E1B17",
